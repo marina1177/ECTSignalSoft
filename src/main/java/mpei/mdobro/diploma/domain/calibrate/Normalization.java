@@ -163,18 +163,25 @@ public class Normalization {
         HodographObject HOFirstMax = getFirstMax(hoList);
         HodographObject HOLastMax = getLastMax(hoList);
 
+        int indexFirstMax = hoList.indexOf(HOFirstMax);
+        int indexLastMax = hoList.indexOf(HOLastMax);
+
+        int i = indexFirstMax;
+
+       HodographObject zeroHO = Collections.min(hoList.subList(indexFirstMax,indexLastMax));
+
         Double firstBound = HOFirstMax.getDisplacement();
         Double endBound = HOLastMax.getDisplacement();
         Integer NumOfPoints = new Double((endBound - firstBound) / step).intValue();
 
-        double alignmentDisplacement = 0.0;
-        if (numIsOdd(NumOfPoints.intValue())) {//не делится на 2 -> одна средняя точка
-            HodographObject middlePoint = hoList.get(hoList.indexOf(HOFirstMax) + ((NumOfPoints - 1) / 2));
-            alignmentDisplacement = middlePoint.getDisplacement() - 0;
-        } else {
-            HodographObject middlePoint_1 = hoList.get(hoList.indexOf(HOFirstMax) + ((NumOfPoints) / 2));
-            alignmentDisplacement = middlePoint_1.getDisplacement() / 2;
-        }
+        double alignmentDisplacement = zeroHO.getDisplacement();
+//        if (numIsOdd(NumOfPoints.intValue())) {//не делится на 2 -> одна средняя точка
+//            HodographObject middlePoint = hoList.get(hoList.indexOf(HOFirstMax) + ((NumOfPoints - 1) / 2));
+//            alignmentDisplacement = middlePoint.getDisplacement() - 0;
+//        } else {
+//            HodographObject middlePoint_1 = hoList.get(hoList.indexOf(HOFirstMax) + ((NumOfPoints) / 2));
+//            alignmentDisplacement = middlePoint_1.getDisplacement() / 2;
+//        }
 
         log.info("AlignmentDisplacement: {}", alignmentDisplacement);
         double finalAlignmentDisplacement = alignmentDisplacement;
@@ -196,18 +203,18 @@ public class Normalization {
         copyList.addAll(list);
 
         int i = 1;
-        while (i < copyList.size()-1) {
+        while (i < copyList.size() - 1) {
             HodographObject ho = copyList.get(i);
             HodographObject ho_prev = copyList.get(i - 1);
 
-            Double delta = Math.abs(ho_prev.complexNumber.abs()*1000) - Math.abs(ho.complexNumber.abs()*1000);
-            if (delta > 0) {
+            Double delta = (ho_prev.complexNumber.abs() * 10000) - (ho.complexNumber.abs() * 10000);
+            if (delta > 0 && i >= list.size() / 4) {
                 list.get(i - 1).setFirstAmpMax(true);
-                System.out.println("FirstMax:\n i = "+i+"| abs = "+ho.complexNumber.abs()*1000+"| disp = "+ho.getDisplacement()*1000);
-                System.out.println("\n i-1 = "+(i-1)+"| abs = "+ho_prev.complexNumber.abs()*1000+"| disp = "+ho_prev.getDisplacement()*1000);
-                return list.get(i - 1);
+                System.out.println("FirstMax:\n i = " + i + "| abs = " + ho.complexNumber.abs() * 1000 + "| disp = " + ho.getDisplacement() * 1000);
+                System.out.println("\n i-1 = " + (i - 1) + "| abs = " + ho_prev.complexNumber.abs() * 1000 + "| disp = " + ho_prev.getDisplacement() * 1000);
+                return list.get(i-1 );
             }
-            i = i+1;
+            i = i + 1;
         }
         return null;
     }
@@ -217,14 +224,17 @@ public class Normalization {
                 .comparing(HodographObject::getDisplacement));
 
         int i = list.size() - 2;
-        while (i >= 0) {
-            if (list.get(i).complexNumber.abs() - list.get(i+1).complexNumber.abs() > 0) {
-                list.get(i).setFirstAmpMax(true);
-                System.out.println("LastMax:\n i = "+i+"| abs = "+list.get(i).complexNumber.abs()+"| disp = "+list.get(i).getDisplacement());
-                System.out.println("\n i+1 = "+i+"| abs = "+list.get(i+1).complexNumber.abs()+"| disp = "+list.get(i+1).getDisplacement());
-                return list.get(i);
+        while (i > 0) {
+            HodographObject ho = list.get(i + 1);
+            HodographObject ho_prev = list.get(i);
+
+            Double delta = (ho_prev.complexNumber.abs() * 1000) - (ho.complexNumber.abs() * 1000);
+            if (delta > 0 && (list.size() - i) >= list.size() / 4) {
+                System.out.println("LastMax:\n i = " + i + "| abs = " + list.get(i).complexNumber.abs() + "| disp = " + list.get(i).getDisplacement());
+                System.out.println("\n i+1 = " + (i + 1) + "| abs = " + list.get(i + 1).complexNumber.abs() + "| disp = " + list.get(i + 1).getDisplacement());
+                return list.get(i+1);
             }
-            i = i-1;
+            i = i - 1;
         }
         return null;
     }
