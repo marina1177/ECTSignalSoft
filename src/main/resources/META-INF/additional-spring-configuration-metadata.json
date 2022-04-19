@@ -1,0 +1,8 @@
+{
+  "properties": [
+    {
+      "name": "calibration.freq_25kHz.Phase_deep_100",
+      "type": "java.lang.String",
+      "description": "Description for calibration.freq_25kHz.Phase_deep_100."
+  }
+] }

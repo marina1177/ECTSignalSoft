@@ -1,0 +1,39 @@
+spring:
+#  logging:
+#    level:
+#      org.springframework.web: INFO
+#      guru.springframework.controllers: WARN
+#      org.hibernate: WARN
+  fileType: .xlsx
+  fieldName: items
+  datasource:
+    username: postgres
+    password: postgres
+    url: jdbc:postgresql://localhost:5432/data # jdbc:postgresql://localhost:5433/company
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        ddl-auto: create-drop
+server:
+  error:
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - '*'
+
+calibration:
+  path_to_file: resources/calibration/calibration_deep_100.xlsx
+  Amp_deep_100: 1
+  Phase_deep_100: 40
+
+#logging:
+#  level:
+#    ROOT: INFO
+
