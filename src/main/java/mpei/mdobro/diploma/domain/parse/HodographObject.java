@@ -20,7 +20,7 @@ public class HodographObject implements Comparable<HodographObject> {
     public Double defectLength; // wo CALIBRATION
     public Double defectExtension; // wo CALIBRATION
     public boolean firstImMax;
-    public boolean firstAmpMax;
+    private boolean firstAmpMax;
     public boolean firstReMax;
 
     public int compareTo(HodographObject p) {

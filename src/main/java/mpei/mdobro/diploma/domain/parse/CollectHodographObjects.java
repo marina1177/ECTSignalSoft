@@ -82,7 +82,7 @@ public class CollectHodographObjects {
                 //если дефект не калибровочный типа - должна быть указана длина в названии
                 Double length = fileNameParser.getDefectLength();
                 if (length != 0.0 && titleIndex.containsKey("defect_length[mm]")) {
-                    length = cellsValues.get(titleIndex.get("defect_length[mm]")).doubleValue();
+                    length = cellsValues.get(titleIndex.get("defect_length[mm]")).doubleValue()*1000.0;
                 }
 
                 HodographObject hodographObject = new HodographObject(

@@ -7,9 +7,5 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class NormalizationConfig {
 
-    @Bean
-    public Normalization normalization() {
-        return new Normalization();
-    }
-
+   
 }

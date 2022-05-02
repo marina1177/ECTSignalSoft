@@ -8,11 +8,13 @@ import org.knowm.xchart.SwingWrapper;
 import org.knowm.xchart.XYChart;
 import org.knowm.xchart.XYChartBuilder;
 import org.knowm.xchart.XYSeries;
+import org.knowm.xchart.style.markers.SeriesMarkers;
 
 import java.awt.*;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Data
 @Slf4j
@@ -20,6 +22,48 @@ import java.util.Map;
 public class PaintPlots {
 
     private final Map<Integer, List<HodographObject>> map;
+
+    public void plotPhaseLengthCurves(Map<Integer, Map<Integer, List<HodographObject>>>
+                                              freqToDeepAndLengthAngleList) {
+
+        List<XYChart> charts = new ArrayList<XYChart>();
+
+        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry : freqToDeepAndLengthAngleList.entrySet()) {
+
+            XYChart chart = getLengthPhaseChart(entry);
+            charts.add(chart);
+
+        }
+        new SwingWrapper<XYChart>(charts).displayChartMatrix();
+    }
+
+
+    public XYChart getLengthPhaseChart(Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry) {
+
+        XYChart chart = new XYChartBuilder()
+                .title("Length-Phase Curve: " + entry.getKey() + "kHz")
+                .xAxisTitle("Length of defect [mm]")
+                .yAxisTitle("Phase of defect [deg]")
+                .width(600).height(400)
+                .build();
+//        chart.getStyler().setYAxisMin(-180.0);
+//        chart.getStyler().setYAxisMax(180.0);
+
+        XYSeries series;
+        //для каждой глубины своя прямая
+        for (Map.Entry<Integer, List<HodographObject>> deepHO : entry.getValue().entrySet()) {
+            // deepHO: 5 точек для графика
+            deepHO.getValue().sort(Comparator
+                    .comparing(HodographObject::getDefectLength));
+            List<Double> xData = deepHO.getValue().stream().map(HodographObject::getDefectLength).collect(Collectors.toList());
+            List<Double> yData = deepHO.getValue().stream().map(o->o.getComplexNumber().getArgument()).collect(Collectors.toList());
+
+            series = chart.addSeries("deep = " +deepHO.getKey(), xData, yData);
+            series.setMarker(SeriesMarkers.NONE);
+        }
+        return chart;
+    }
+
 
     public void plotHodographs() {
 
@@ -31,9 +75,9 @@ public class PaintPlots {
             XYChart ImChart = getImPartChart(entry);
             XYChart ReChart = getRePartChart(entry);
             XYChart amplitudeChart = getAmplitudeChart(entry);
-//            charts.add(ImChart);
-//            charts.add(hodographChart);
-//            charts.add(ReChart);
+            charts.add(ImChart);
+            charts.add(hodographChart);
+            charts.add(ReChart);
 
             charts.add(amplitudeChart);
 //            JFrame frame = new JFrame("Chart");
@@ -47,7 +91,7 @@ public class PaintPlots {
             Integer deep = entry.getValue().get(0).getDeep();
 
             new SwingWrapper<XYChart>(charts)
-                    .displayChartMatrix("deep: "+deep+"%\nfreq: "+entry.getKey() + "kHz");
+                    .displayChartMatrix("deep: " + deep + "%\nfreq: " + entry.getKey() + "kHz");
         }
     }
 
@@ -135,7 +179,7 @@ public class PaintPlots {
         List<Double> xData = new ArrayList();
         List<Double> yData = new ArrayList();
         entry.getValue().forEach(o -> {
-            xData.add(o.getDisplacement()*10000);
+            xData.add(o.getDisplacement() * 10000);
             yData.add(o.getComplexNumber().abs());
         });
 
@@ -147,7 +191,7 @@ public class PaintPlots {
         chart.addSeries(entry.getKey() + "[kHz]", xData, yData)
                 .setMarkerColor(Color.RED)
                 .setLineColor(Color.RED)
-        .getXMax();
+                .getXMax();
 
         return chart;
 
@@ -187,17 +231,6 @@ public class PaintPlots {
 //        return chartIm;
 //    }
 
-
-    public void plotPhaseCurves() {
-//        for () {
-//
-//            XYChart chart = new XYChartBuilder().width(800).height(600)
-//                    .title("Amplitude curve: " + entry.getKey() + "kHz")
-//                    .xAxisTitle("Phase[degree]")
-//                    .yAxisTitle("deep[%]")
-//                    .build();
-//        }
-    }
 
     public void plotPODCurves() {
 

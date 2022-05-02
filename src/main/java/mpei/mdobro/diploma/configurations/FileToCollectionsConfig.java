@@ -1,5 +1,6 @@
 package mpei.mdobro.diploma.configurations;
 
+import mpei.mdobro.diploma.domain.calibrate.Normalization;
 import mpei.mdobro.diploma.domain.parse.ExcelFileFilter;
 import mpei.mdobro.diploma.domain.parse.FileToCollections;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,8 +19,13 @@ public class FileToCollectionsConfig {
     }
 
     @Bean
+    public Normalization normalization() {
+        return new Normalization();
+    }
+
+    @Bean
     public FileToCollections fileToCollections() {
-        return new FileToCollections();
+        return new FileToCollections(normalization());
     }
 
 

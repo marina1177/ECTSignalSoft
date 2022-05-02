@@ -15,7 +15,7 @@ import java.util.*;
 public class FileToCollections {
 
     private static CollectHodographObjects collectHodographObjects;
-    private static Normalization norm = new Normalization();
+    public final Normalization norm;
 
     public Map<Integer, List<HodographObject>> convertCalibrationFileToMap(File f) {
 
@@ -37,11 +37,8 @@ public class FileToCollections {
         // теперь к каждому годографу - пременить алгоритм нормализации и определить наклон
         //applyAlgorithm for each freq and return HO with Phase
         Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepToLengthAngleList = new HashMap<>();
-
-        norm.applyAlgorithmAndGetLimitsCurves(freqToLengthToDeepAndHodograph, algorithmType);
         Map<Integer, List<HodographObject>> deepAndLengthAngleList = null;
-
-        return freqToDeepToLengthAngleList;
+        return norm.applyAlgorithmAndGetLimitsCurves(freqToLengthToDeepAndHodograph, algorithmType);
     }
 
     public Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> convertCommonListToCommonFreqMap(List<HodographObject> hodographObjectList) {
@@ -101,7 +98,7 @@ public class FileToCollections {
 
                 for (HodographObject entity : lenEntry.getValue()) {
 
-                    if ((entity.getDeep() != tmpDeep)) {
+                    if (!(entity.getDeep().equals(tmpDeep))) {
                         //sort by deep & put
                         sortByDisplacementAndDeep(tmpList);
                         //----->    apply Algorithm   for tmpDeep
@@ -145,7 +142,7 @@ public class FileToCollections {
             Double tmpLength = entry.getValue().get(0).getDefectLength();
             for (HodographObject entity : entry.getValue()) {
 
-                if ((entity.getDefectLength() != tmpLength)) {
+                if (!tmpLength.equals(entity.getDefectLength())) {
                     //sort by deep & put
                     sortByDisplacementAndDeep(tmpList);
                     lengthAndHodograph.put(tmpLength, tmpList);

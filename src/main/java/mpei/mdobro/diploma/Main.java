@@ -6,7 +6,6 @@ import mpei.mdobro.diploma.domain.calibrate.Normalization;
 import mpei.mdobro.diploma.domain.parse.AlgorithmType;
 import mpei.mdobro.diploma.domain.parse.FileToCollections;
 import mpei.mdobro.diploma.domain.parse.HodographObject;
-import mpei.mdobro.diploma.domain.print.Drawer;
 import mpei.mdobro.diploma.domain.print.PaintPlots;
 
 import java.io.File;
@@ -14,7 +13,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static mpei.mdobro.diploma.domain.constants.AppConstants.*;
+import static mpei.mdobro.diploma.domain.constants.AppConstants.CALIBRATION_DIR;
+import static mpei.mdobro.diploma.domain.constants.AppConstants.LIMITS_DIR;
 
 
 //@SpringBootApplication
@@ -26,8 +26,8 @@ public class Main {
 //    @Value("${calibration.path_to_file}")
 //    private String excelFileName;
 
-    private static FileToCollections fileToCollections = new FileToCollections();
     private static Normalization norm = new Normalization();
+    private static FileToCollections fileToCollections = new FileToCollections(norm);
 
     public static void main(String[] args) throws IOException {
 //        SpringApplication.run(Main.class, args);
@@ -55,50 +55,39 @@ public class Main {
                     = fileToCollections.convertCalibrationFileToMap(calibration100File);
             norm.normalizeWithMaxAmplitude(freqHOMap);
 
-
             PaintPlots painter = new PaintPlots(freqHOMap);
             painter.plotHodographs();
-        }
-
-//        for (File f : files) {
-//            HashMap<Integer, List<HodographObject>> freqHOMap
-//                    = fileToCollections.convertFileToCollection(f);
-//
-//            norm.normalizeHodographsAcordingToThroughSignal(freqHOMap);
-////                printPlots
-////            PaintPlots painter = new PaintPlots(freqHOMap);
-////            painter.plotHodographs();
-//        }
 
 
-        //=======================================LIMITS==============================
 
-        File limitsDir = new File(LIMITS_DIR);
-        List<File> limitsFiles = Arrays.stream(limitsDir.listFiles()).collect(Collectors.toList());
+            //=======================================LIMITS==============================
 
-        List<HodographObject> commonList = new ArrayList<>();
-        for (File f : limitsFiles) {
-            // в названии файла добавлена длина
-            List<HodographObject> HOList = fileToCollections.convertFileToHOList(f);
-            // anotherList.addAll(list) will also just add the references
-            commonList.addAll(HOList);
-        }
+            File limitsDir = new File(LIMITS_DIR);
+            List<File> limitsFiles = Arrays.stream(limitsDir.listFiles()).collect(Collectors.toList());
 
-        Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleList
-                = fileToCollections.convertCommonListToLimitsCurvesMap(commonList, AlgorithmType.MAX_AMPLITUDE);
+            List<HodographObject> commonList = new ArrayList<>();
+            for (File f : limitsFiles) {
+                // в названии файла добавлена длина
+                List<HodographObject> HOList = fileToCollections.convertFileToHOList(f);
+                // anotherList.addAll(list) will also just add the references
+                commonList.addAll(HOList);
+            }
 
-        //norm.normalizeHOListAccordingToAlgorithm(commonList, AlgorithmType.FIRST_IM_MAX);
+            Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleList
+                    = fileToCollections.convertCommonListToLimitsCurvesMap(commonList, AlgorithmType.MAX_AMPLITUDE);
 
-        // общая карта для отрисовки и анализа
-        // каждый отдельный годограф внутри нужно сдвинуть относительно нуля -> опять norm. ???
+            painter.plotPhaseLengthCurves(freqToDeepAndLengthAngleList);
+            //norm.normalizeHOListAccordingToAlgorithm(commonList, AlgorithmType.FIRST_IM_MAX);
+
+            // общая карта для отрисовки и анализа
+            // каждый отдельный годограф внутри нужно сдвинуть относительно нуля -> опять norm. ???
 //        Map<Double, Map<Integer, Map<Integer, List<HodographObject>>>> lengthToFreqToDeepAndHodograph
 //                = fileToCollections.convertCommonListToCommonMap(commonList);
 
 
-
-        Drawer drawer = new Drawer();
-        drawer.simpleChart2();
-        //drawLimitsCurves(lengthToFreqToDeepAndHodograph);
+//            Drawer drawer = new Drawer();
+//            drawer.simpleChart2();
+            //drawLimitsCurves(lengthToFreqToDeepAndHodograph);
 //        for (var entryLength : lengthToFreqToDeepAndHodograph.entrySet()) {
 //            System.out.println("LIMITS\nLength: " + entryLength.getKey() + "[mm] ->");
 //            for (var freqToDeepAndHodograph : entryLength.getValue().entrySet()) {
@@ -120,15 +109,16 @@ public class Main {
 //
 //        }
 
-        //plot 5 limits curves for 3 frequencies
-        // https://stackoverflow.com/questions/38931111/how-to-make-plots-in-java-like-in-matlab-same-syntax
+            //plot 5 limits curves for 3 frequencies
+            // https://stackoverflow.com/questions/38931111/how-to-make-plots-in-java-like-in-matlab-same-syntax
 
 
-        //=======================================DATA==============================
+            //=======================================DATA==============================
 
 //        File dataDir = new File(DATA_DIR);
 //        List<File> dataFiles = Arrays.stream(dataDir.listFiles()).collect(Collectors.toList());
 
+        }
     }
 }
 
