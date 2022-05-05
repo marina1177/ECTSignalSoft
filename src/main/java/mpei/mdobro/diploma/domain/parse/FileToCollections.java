@@ -29,15 +29,101 @@ public class FileToCollections {
         return freqAndHOList;
     }
 
+//    public Map<Integer, Map<Integer, List<HodographObject>>> convertCommonDataListToLimitsCurvesMap(List<HodographObject> hodographObjectList,
+//                                                                                                AlgorithmType algorithmType) {
+//
+//        Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqToLengthToDeepAndHodograph
+//                = convertCommonDataListToCommonFreqMap(hodographObjectList, algorithmType);
+//
+//        // теперь к кажgetFreqAndHOMapдому годографу - пременить алгоритм нормализации и определить наклон
+//        //applyAlgorithm for each freq and return HO with Phase
+//        return norm.applyAlgorithmAndGetLimitsCurves(freqToLengthToDeepAndHodograph, algorithmType);
+//    }
+
+    public Map<Integer, Map<Integer, List<HodographObject>>> convertCommonDataListToCommonFreqMap(
+            List<List<HodographObject>> hodographsDifferentTypes, AlgorithmType algorithmType) {
+
+        Map<Integer, Map<Integer, List<List<HodographObject>>>> limitPointsForCurrentDefectType = new HashMap<>();
+        Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> commonBuffer = new HashMap<>();
+
+        for (List<HodographObject> hodographObjectList : hodographsDifferentTypes) {
+            System.out.println("======================TYPE = "+hodographObjectList.get(0).getTypeDefect()
+            +"==============================\n");
+            //еще не отдельные годографы, а много их
+            Map<Integer, List<HodographObject>> freqAndManyHodoraphsList
+                    = getFreqAndManyHodographsMap(hodographObjectList);
+            Map<Integer, Map<Double, List<HodographObject>>> freqToLengthAndHodograph
+                    = getFreqToLengthAndHodograph(freqAndManyHodoraphsList);
+
+            //тут должен быть лист с одним годографом для дефекта текущего типа
+            Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqToLengthToDeepAndHodograph
+                    = getFreqToLengthToDeepAndLimitsHO(freqToLengthAndHodograph);
+
+
+            // разбить нормализацию годографов и вернуть мапу
+            // Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>>
+            // где в списке будет одна точка для этого дефекта
+            norm.returnMapWitNormalizedPointsForDifferentDefectTypes(freqToLengthToDeepAndHodograph, algorithmType);
+            System.out.println("Parse and save points for single Hodo!");
+
+            // проверить внешний буффер на ключи и
+            // либо добавить новые ключи с точкой либо доложить точку в список
+            putPointsToCommonBuffer(commonBuffer, freqToLengthToDeepAndHodograph);
+
+            // усреднить все точки в списке - преобразовать в мапу
+            // Map<Integer, Map<Integer, List<HodographObject>>>
+
+            //Map<Integer, Map<Integer, List<HodographObject>>>
+
+            // нарисовать
+        }
+
+        System.out.println("!");
+
+        return null;
+    }
+
+   private void  putPointsToCommonBuffer(Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> commonBuffer,
+                                         Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqToLengthToDeepAndHodograph) {
+
+       for (Map.Entry<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqEntry : freqToLengthToDeepAndHodograph.entrySet()) {
+
+           if (!commonBuffer.containsKey(freqEntry.getKey())) {
+               commonBuffer.put(freqEntry.getKey(), freqEntry.getValue());
+               continue;
+           }
+           for (Map.Entry<Double, Map<Integer, List<HodographObject>>> lenEntry : freqEntry.getValue().entrySet()) {
+               Map<Double, Map<Integer, List<HodographObject>>> tmpLen = commonBuffer.get(freqEntry.getKey());
+               if (!tmpLen.containsKey(lenEntry.getKey())) {
+                   commonBuffer.get(freqEntry.getKey()).put(lenEntry.getKey(), lenEntry.getValue());
+                   continue;
+               }
+               for (Map.Entry<Integer, List<HodographObject>> deepEntry : lenEntry.getValue().entrySet()) {
+                   Map<Integer, List<HodographObject>> tmpDeep = commonBuffer.get(freqEntry.getKey()).get(lenEntry.getKey());
+                   if (!tmpDeep.containsKey(deepEntry.getKey())) {
+                       commonBuffer.get(freqEntry.getKey()).get(lenEntry.getKey()).put(deepEntry.getKey(), deepEntry.getValue());
+                       continue;
+                   }else {
+
+                            commonBuffer.get(freqEntry.getKey())
+                               .get(lenEntry.getKey())
+                                    .get(deepEntry.getKey())
+                                    .add(deepEntry.getValue().get(0));
+                   }
+
+               }
+           }
+       }
+   }
+
     public Map<Integer, Map<Integer, List<HodographObject>>> convertCommonListToLimitsCurvesMap(List<HodographObject> hodographObjectList,
                                                                                                 AlgorithmType algorithmType) {
 
-        Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqToLengthToDeepAndHodograph = convertCommonListToCommonFreqMap(hodographObjectList);
+        Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqToLengthToDeepAndHodograph
+                = convertCommonListToCommonFreqMap(hodographObjectList);
 
         // теперь к каждому годографу - пременить алгоритм нормализации и определить наклон
         //applyAlgorithm for each freq and return HO with Phase
-        Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepToLengthAngleList = new HashMap<>();
-        Map<Integer, List<HodographObject>> deepAndLengthAngleList = null;
         return norm.applyAlgorithmAndGetLimitsCurves(freqToLengthToDeepAndHodograph, algorithmType);
     }
 
@@ -80,7 +166,6 @@ public class FileToCollections {
     }
 
 
-    //point
     private Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> getFreqToLengthToDeepAndLimitsHO(
             Map<Integer, Map<Double, List<HodographObject>>> freqToLengthAndHodograph) {
 
@@ -93,7 +178,7 @@ public class FileToCollections {
                 Map<Integer, List<HodographObject>> deepAndHodograph = new HashMap<>();
 
                 sortByDisplacementAndDeep(lenEntry.getValue());
-                List<HodographObject> tmpList = new ArrayList<>();
+                List<HodographObject> tmpList = new LinkedList<>();
                 Integer tmpDeep = lenEntry.getValue().get(0).getDeep();
 
                 for (HodographObject entity : lenEntry.getValue()) {
@@ -104,7 +189,7 @@ public class FileToCollections {
                         //----->    apply Algorithm   for tmpDeep
                         deepAndHodograph.put(tmpDeep, tmpList);
 
-                        tmpList = new ArrayList<>();
+                        tmpList = new LinkedList<>();
                         tmpDeep = entity.getDeep();
                     }
                     tmpList.add(entity);
@@ -222,6 +307,36 @@ public class FileToCollections {
     }
 
 
+    private Map<Integer, List<HodographObject>> getFreqAndManyHodographsMap(List<HodographObject> hodographObjectList) {
+
+        Map<Integer, List<HodographObject>> freqHOMap = new HashMap<>();
+
+        sortByDisplacementAndFreq(hodographObjectList);
+
+        List<HodographObject> tmpList = new ArrayList<>();
+        int tmpFreq = hodographObjectList.get(0).getFreq();
+
+        for (HodographObject entity : hodographObjectList) {
+
+            if ((entity.getFreq() != tmpFreq)) {
+                //sort by deep & put
+                sortByDisplacementAndDeep(tmpList);
+                freqHOMap.put(tmpFreq, tmpList);
+
+                tmpList = new ArrayList<>();
+                tmpFreq = entity.getFreq();
+            }
+            tmpList.add(entity);
+
+            if (hodographObjectList.indexOf(entity) == hodographObjectList.size() - 1) {
+                //sort by deep & put
+                sortByDisplacementAndDeep(tmpList);
+                freqHOMap.put(tmpFreq, tmpList);
+            }
+        }
+        return freqHOMap;
+    }
+
     private Map<Integer, List<HodographObject>> getFreqAndHOMap(List<HodographObject> hodographObjectList) {
 
         Map<Integer, List<HodographObject>> freqHOMap = new HashMap<>();
@@ -237,7 +352,8 @@ public class FileToCollections {
             if ((entity.getFreq() != tmpFreq)) {
                 //sort by deep & put
                 sortByDisplacementAndDeep(tmpList);
-                norm.editDisplacement(tmpFreq,tmpList);
+                norm.moveHodographAccordingZero(tmpList);
+                norm.editDisplacement(tmpFreq, tmpList);
                 freqHOMap.put(tmpFreq, tmpList);
 
                 tmpList = new ArrayList<>();
@@ -249,7 +365,8 @@ public class FileToCollections {
             if (hodographObjectList.indexOf(entity) == hodographObjectList.size() - 1) {
                 //sort by deep & put
                 sortByDisplacementAndDeep(tmpList);
-                norm.editDisplacement(tmpFreq,tmpList);
+                norm.moveHodographAccordingZero(tmpList);
+                norm.editDisplacement(tmpFreq, tmpList);
                 freqHOMap.put(tmpFreq, tmpList);
             }
         }

@@ -3,18 +3,22 @@ package mpei.mdobro.diploma.domain.print;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import mpei.mdobro.diploma.domain.parse.DefectTypes;
 import mpei.mdobro.diploma.domain.parse.HodographObject;
 import org.knowm.xchart.SwingWrapper;
 import org.knowm.xchart.XYChart;
 import org.knowm.xchart.XYChartBuilder;
 import org.knowm.xchart.XYSeries;
+import org.knowm.xchart.style.Styler;
+import org.knowm.xchart.style.lines.SeriesLines;
 import org.knowm.xchart.style.markers.SeriesMarkers;
 
 import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static java.lang.Math.PI;
 
 @Data
 @Slf4j
@@ -23,22 +27,95 @@ public class PaintPlots {
 
     private final Map<Integer, List<HodographObject>> map;
 
-    public void plotPhaseLengthCurves(Map<Integer, Map<Integer, List<HodographObject>>>
-                                              freqToDeepAndLengthAngleList) {
+    private Map<Integer, Map<Integer, List<HodographObject>>>
+            freqToDeepAndLengthAngleList;
+    private Map<DefectTypes, Map<Integer, Map<Integer, List<HodographObject>>>>
+            defectTypeToFreqToDeepAndLengthAngleModelList;
 
-        List<XYChart> charts = new ArrayList<XYChart>();
+
+    public void plotPODCurves() {
+
+    }
+
+    public void plotModelDataAmongLimits() {
+//
+//        List<XYChart> charts = new ArrayList<>();
+//        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry : freqToDeepAndLengthAngleList.entrySet()) {
+//
+//            XYChart chart = getLengthPhaseChartWithData(entry.getKey(),
+//                    freqToDeepAndLengthAngleModelList.get(entry.getKey()),
+//                    entry.getValue());
+//            charts.add(chart);
+//
+//        }
+//        new SwingWrapper<XYChart>(charts).displayChartMatrix();
+    }
+
+    private XYChart getLengthPhaseChartWithData(Integer freq,
+                                                Map<Integer, List<HodographObject>> deepToDataPoints,
+                                                Map<Integer, List<HodographObject>> deepToLimitPoints) {
+        XYChart chart = new XYChartBuilder()
+                .title("Length-Phase Curve: " + freq + "kHz")
+                .xAxisTitle("Length of defect [mm]")
+                .yAxisTitle("Phase of defect [deg]")
+                .width(600).height(400)
+                .build();
+
+        // Customize Chart
+        chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideSW);
+        chart.getStyler().setToolTipsEnabled(true);
+
+        XYSeries seriesData;
+        //для каждой глубины своя прямая
+        for (Map.Entry<Integer, List<HodographObject>> deepHO : deepToDataPoints.entrySet()) {
+            // deepHO: 5 точек для графика
+            deepHO.getValue().sort(Comparator
+                    .comparing(HodographObject::getDefectLength));
+            List<Double> xData = deepHO.getValue().stream().map(HodographObject::getDefectLength).collect(Collectors.toList());
+            List<Double> yData = deepHO.getValue().stream().map(o -> o.getComplexNumber().getArgument() * 180 / PI).collect(Collectors.toList());
+
+            seriesData = chart.addSeries("deep = " + deepHO.getKey() +
+                            "; type = " + deepHO.getValue().get(0).getTypeDefect(),
+                    xData, yData);
+            seriesData.setLineStyle(SeriesLines.NONE);
+            chart.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
+
+            if (deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.RECT))
+                seriesData.setMarker(SeriesMarkers.RECTANGLE);
+            else if (deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.TRI))
+                seriesData.setMarker(SeriesMarkers.TRIANGLE_UP);
+            else if (deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.PLGN_W_30)
+                    || deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.PLGN_W_45)
+                    || deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.PLGN_W_60)
+                    || deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.PLGN))
+                seriesData.setMarker(SeriesMarkers.TRAPEZOID);
+        }
+
+        XYSeries seriesLimits;
+        for (Map.Entry<Integer, List<HodographObject>> deepHO : deepToLimitPoints.entrySet()) {
+            // deepHO: 5 точек для графика
+            deepHO.getValue().sort(Comparator
+                    .comparing(HodographObject::getDefectLength));
+            List<Double> xData = deepHO.getValue().stream().map(HodographObject::getDefectLength).collect(Collectors.toList());
+            List<Double> yData = deepHO.getValue().stream().map(o -> o.getComplexNumber().getArgument() * 180 / PI).collect(Collectors.toList());
+
+            seriesLimits = chart.addSeries("deep = " + deepHO.getKey(), xData, yData);
+            seriesLimits.setMarker(SeriesMarkers.CIRCLE);
+        }
+        return chart;
+    }
+
+    public void plotPhaseLengthCurves() {
+        List<XYChart> charts = new ArrayList<>();
 
         for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry : freqToDeepAndLengthAngleList.entrySet()) {
-
-            XYChart chart = getLengthPhaseChart(entry);
+            XYChart chart = getLengthPhaseChart(entry, "linear");
             charts.add(chart);
-
         }
         new SwingWrapper<XYChart>(charts).displayChartMatrix();
     }
 
-
-    public XYChart getLengthPhaseChart(Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry) {
+    private XYChart getLengthPhaseChart(Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry, String type) {
 
         XYChart chart = new XYChartBuilder()
                 .title("Length-Phase Curve: " + entry.getKey() + "kHz")
@@ -56,19 +133,18 @@ public class PaintPlots {
             deepHO.getValue().sort(Comparator
                     .comparing(HodographObject::getDefectLength));
             List<Double> xData = deepHO.getValue().stream().map(HodographObject::getDefectLength).collect(Collectors.toList());
-            List<Double> yData = deepHO.getValue().stream().map(o->o.getComplexNumber().getArgument()).collect(Collectors.toList());
+            List<Double> yData = deepHO.getValue().stream().map(o -> o.getComplexNumber().getArgument() * 180 / PI).collect(Collectors.toList());
 
-            series = chart.addSeries("deep = " +deepHO.getKey(), xData, yData);
-            series.setMarker(SeriesMarkers.NONE);
+            series = chart.addSeries("deep = " + deepHO.getKey(), xData, yData);
+            series.setMarker(SeriesMarkers.CIRCLE);
         }
         return chart;
     }
 
-
     public void plotHodographs() {
 
         for (Map.Entry<Integer, List<HodographObject>> entry : map.entrySet()) {
-            int numCharts = 4;
+
             List<XYChart> charts = new ArrayList<XYChart>();
 
             XYChart hodographChart = getHodographChart(entry);
@@ -115,7 +191,6 @@ public class PaintPlots {
         chartIm.addSeries(entry.getKey() + "[kHz]", xData, yData)
                 .setMarkerColor(Color.RED)
                 .setLineColor(Color.ORANGE);
-        //series.setFillColor(Color.ORANGE);
         return chartIm;
     }
 
@@ -164,7 +239,7 @@ public class PaintPlots {
         return chart_hod;
     }
 
-    public XYChart getAmplitudeChart(Map.Entry<Integer, List<HodographObject>> entry) {
+    private XYChart getAmplitudeChart(Map.Entry<Integer, List<HodographObject>> entry) {
 
 
         XYChart chart = new XYChartBuilder().width(1000).height(1000)
@@ -231,8 +306,4 @@ public class PaintPlots {
 //        return chartIm;
 //    }
 
-
-    public void plotPODCurves() {
-
-    }
 }

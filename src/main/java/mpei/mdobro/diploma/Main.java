@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import mpei.mdobro.diploma.domain.calibrate.Normalization;
 import mpei.mdobro.diploma.domain.parse.AlgorithmType;
+import mpei.mdobro.diploma.domain.parse.DefectTypes;
 import mpei.mdobro.diploma.domain.parse.FileToCollections;
 import mpei.mdobro.diploma.domain.parse.HodographObject;
 import mpei.mdobro.diploma.domain.print.PaintPlots;
@@ -13,8 +14,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static mpei.mdobro.diploma.domain.constants.AppConstants.CALIBRATION_DIR;
-import static mpei.mdobro.diploma.domain.constants.AppConstants.LIMITS_DIR;
+import static mpei.mdobro.diploma.domain.constants.AppConstants.*;
 
 
 //@SpringBootApplication
@@ -56,9 +56,8 @@ public class Main {
             norm.normalizeWithMaxAmplitude(freqHOMap);
 
             PaintPlots painter = new PaintPlots(freqHOMap);
-            painter.plotHodographs();
 
-
+//            painter.plotHodographs();
 
             //=======================================LIMITS==============================
 
@@ -76,38 +75,8 @@ public class Main {
             Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleList
                     = fileToCollections.convertCommonListToLimitsCurvesMap(commonList, AlgorithmType.MAX_AMPLITUDE);
 
-            painter.plotPhaseLengthCurves(freqToDeepAndLengthAngleList);
-            //norm.normalizeHOListAccordingToAlgorithm(commonList, AlgorithmType.FIRST_IM_MAX);
-
-            // общая карта для отрисовки и анализа
-            // каждый отдельный годограф внутри нужно сдвинуть относительно нуля -> опять norm. ???
-//        Map<Double, Map<Integer, Map<Integer, List<HodographObject>>>> lengthToFreqToDeepAndHodograph
-//                = fileToCollections.convertCommonListToCommonMap(commonList);
-
-
-//            Drawer drawer = new Drawer();
-//            drawer.simpleChart2();
-            //drawLimitsCurves(lengthToFreqToDeepAndHodograph);
-//        for (var entryLength : lengthToFreqToDeepAndHodograph.entrySet()) {
-//            System.out.println("LIMITS\nLength: " + entryLength.getKey() + "[mm] ->");
-//            for (var freqToDeepAndHodograph : entryLength.getValue().entrySet()) {
-//                System.out.println("\t\tfreq: " + freqToDeepAndHodograph.getKey() + " [kHz] ->");
-//                for (var deepAndHodograph : freqToDeepAndHodograph.getValue().entrySet()) {
-//                    System.out.println("\t\t\tdeep: " + deepAndHodograph.getKey() + "[%]"
-//                    + " -> " + deepAndHodograph.getValue().size() + " [entities]");
-//
-//                    //везде ли есть точка максимума?
-////                    HodographObject ob = deepAndHodograph.getValue()
-////                            .stream().filter(ho -> ho.firstImMax == true)
-////                            .collect(toSingleton());
-////                    System.out.println("\t\t\tArg: " + ob.getComplexNumber().getArgument()
-////                            + "\n"
-////                            + "\t\t\tAbs:" + ob.getComplexNumber().abs());
-//                    //print
-//                }
-//            }
-//
-//        }
+            painter.setFreqToDeepAndLengthAngleList(freqToDeepAndLengthAngleList);
+            //painter.plotPhaseLengthCurves();
 
             //plot 5 limits curves for 3 frequencies
             // https://stackoverflow.com/questions/38931111/how-to-make-plots-in-java-like-in-matlab-same-syntax
@@ -115,10 +84,50 @@ public class Main {
 
             //=======================================DATA==============================
 
-//        File dataDir = new File(DATA_DIR);
-//        List<File> dataFiles = Arrays.stream(dataDir.listFiles()).collect(Collectors.toList());
+            File dataModelDir = new File(DATA_DIR);
+            List<File> dataModelFiles = Arrays.stream(dataModelDir.listFiles()).collect(Collectors.toList());
+
+            List<List<HodographObject>> hodographsDifferentTypes = new ArrayList<>();
+            for (File defectTypeDir : dataModelFiles) {
+                DefectTypes type = parseDirNameAndGetDefectType(defectTypeDir.getName());
+
+                if (defectTypeDir.isDirectory()) {
+                    List<File> dataTypeFiles = Arrays.stream(defectTypeDir.listFiles()).collect(Collectors.toList());
+
+                    List<HodographObject> commonDataList = new ArrayList<>();
+                    for (File f : dataTypeFiles) {
+                        List<HodographObject> HOList = fileToCollections.convertFileToHOList(f);
+                        commonDataList.addAll(HOList);
+                    }
+                    hodographsDifferentTypes.add(commonDataList);
+                }
+            }
+            System.out.println("Saved hodographs!");
+            Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleModelList
+                    = fileToCollections.convertCommonDataListToCommonFreqMap(
+                            hodographsDifferentTypes, AlgorithmType.MAX_AMPLITUDE);
+
+            // разместить данные на LIMIT графике, подписать точки (tri/rect/pol_% - deep=%)
+//            painter.setDefectTypeToFreqToDeepAndLengthAngleModelList(defectTypeToFreqToDeepAndLengthAngleModelList);
+//            painter.plotModelDataAmongLimits();
 
         }
+    }
+
+    public static DefectTypes parseDirNameAndGetDefectType(String dirName) {
+        switch (dirName) {
+            case "poligon_30":
+                return DefectTypes.PLGN_W_30;
+            case "poligon_60":
+                return DefectTypes.PLGN_W_60;
+            case "poligon_45":
+                return DefectTypes.PLGN_W_45;
+            case "tri":
+                return DefectTypes.TRI;
+            case "rect":
+                return DefectTypes.RECT;
+        }
+        return DefectTypes.UNKNOUWN_TYPE;
     }
 }
 

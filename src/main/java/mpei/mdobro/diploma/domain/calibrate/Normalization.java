@@ -34,37 +34,36 @@ public class Normalization {
         for (Map.Entry<Integer, List<HodographObject>> entry : map.entrySet()) {
 
             //find HO with max amplitude
-            List<HodographObject> value = entry.getValue();
-            HodographObject maxHO = Collections.max(value);
+            List<HodographObject> hodograph = entry.getValue();
 
-            //find first Im max
-            HodographObject maxImHO = getFirstImMax(value);
-
-            //maxHO.setFirstAmpMax(true);
+            HodographObject minHO = moveHodographAccordingZero(hodograph);
+            //find first max
+            HodographObject firstMax = getFirstMax(hodograph);
 
             List<HodographObject> extremeHOList = new LinkedList<>();
-            extremeHOList.add(maxHO);
+            extremeHOList.add(firstMax);
             freqAndExtremeHO.put(entry.getKey(), extremeHOList);
 
-            Complex maxComplexNumber = maxHO.getComplexNumber();
+            Complex maxComplexNumber = firstMax.getComplexNumber();
 
             // solveNormEquation
             Complex normCoefficient = etalon.divide(maxComplexNumber);
 
             freqAndNormCoefficient.put(entry.getKey(), normCoefficient);
             // applyToAllHO
-            value.stream().forEach(o -> {
+            hodograph.stream().forEach(o -> {
                 o.setComplexNumber(o.getComplexNumber().multiply(normCoefficient));
             });
             editDisplacement(entry.getKey(), entry.getValue());
             // A*(Re+i*Im) = 10*exp(40)
-            log.debug("max HO:\n {}", maxHO.toString());
+            log.debug("max HO:\n {}", firstMax.toString());
 
         }
         return freqAndNormCoefficient;
     }
 
     public void normalizeHOListAccordingToAlgorithm(List<HodographObject> HOList) {
+        moveHodographAccordingZero(HOList);
         HOList.forEach(ho ->
                 ho.setComplexNumber(ho.getComplexNumber()
                         .multiply(freqAndNormCoefficient.get(ho.getFreq())))
@@ -82,6 +81,24 @@ public class Normalization {
                 .orElse(null);
     }
 
+
+//    public HodographObject applyAlgorithm(List<HodographObject> hodograph, Integer freq, AlgorithmType algorithmType) {
+//
+//        HodographObject limitObj = null;
+//        hodograph.sort(Comparator
+//                .comparing(HodographObject::getDisplacement).reversed());
+//        switch (algorithmType) {
+//
+//            case FIRST_IM_MAX: {
+//                System.out.println("FIRST_IM_MAX");
+//            }
+//            case MAX_AMPLITUDE: {
+//                System.out.println("MAX_AMPLITUDE");
+//                limitObj = applyFirstMaxAlgorithm(hodograph, freq);
+//            }
+//        }
+//        return limitObj;
+//    }
 
     private Map<Integer, List<HodographObject>> arrangeByDeep(List<HodographObject> limitsObjectList) {
         Map<Integer, List<HodographObject>> deepToHodographs = new HashMap<>();
@@ -113,6 +130,36 @@ public class Normalization {
         return deepToHodographs;
     }
 
+    public void returnMapWitNormalizedPointsForDifferentDefectTypes(Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqToLengthToDeepAndHodograph,
+                                                                    AlgorithmType algorithmType) {
+        // разбить нормализацию годографов и вернуть мапу
+        // Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>>
+        // где в списке будет одна точка для этого дефекта
+
+        for (Map.Entry<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqEntry : freqToLengthToDeepAndHodograph.entrySet()) {
+
+            for (Map.Entry<Double, Map<Integer, List<HodographObject>>> lenEntry : freqEntry.getValue().entrySet()) {
+
+                for (Map.Entry<Integer, List<HodographObject>> deepEntry : lenEntry.getValue().entrySet()) {
+
+                    deepEntry.getValue().sort(Comparator
+                            .comparing(HodographObject::getDisplacement).reversed());
+                    switch (algorithmType) {
+
+                        case FIRST_IM_MAX: {
+                            System.out.println("FIRST_IM_MAX");
+                        }
+                        case MAX_AMPLITUDE: {
+                            System.out.println("MAX_AMPLITUDE");
+                            HodographObject limitObj = applyFirstMaxAlgorithm(deepEntry.getValue(), freqEntry.getKey());
+                            deepEntry.setValue(new LinkedList<>(Arrays.asList(limitObj)));
+                        }
+                    }
+                }
+            }
+        }
+        return;
+    }
 
     public Map<Integer, Map<Integer, List<HodographObject>>> applyAlgorithmAndGetLimitsCurves(Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqToLengthToDeepAndHodograph,
                                                                                               AlgorithmType algorithmType) {
@@ -158,11 +205,35 @@ public class Normalization {
         }
     }
 
+    public HodographObject moveHodographAccordingZero(List<HodographObject> hodograph) {
+
+        HodographObject zeroHO = getZeroPoint(hodograph);
+
+        //рассчитать смещение, чтобы точка была в (0,0)
+        Complex offset = zeroHO.complexNumber;
+        hodograph.forEach(ho -> ho.setComplexNumber(ho.complexNumber.subtract(offset)));
+
+        return zeroHO;
+    }
+
+    private HodographObject getZeroPoint(List<HodographObject> hodograph) {
+
+        HodographObject HOFirstMax = getFirstMax(hodograph);
+        HodographObject HOLastMax = getLastMax(hodograph);
+
+        int indexFirstMax = hodograph.indexOf(HOFirstMax);
+        int indexLastMax = hodograph.indexOf(HOLastMax);
+
+        //найдена минимальная точка годографа
+        HodographObject zeroHO = Collections.min(hodograph.subList(indexFirstMax, indexLastMax));
+        return zeroHO;
+    }
+
     public void editDisplacement(Integer freq, List<HodographObject> hoList) {
 
         Double step = Math.abs(hoList.get(0).getDisplacement() - hoList.get(1).getDisplacement());
 
-        log.info("freq: {} kHz", freq);
+        //log.info("freq: {} kHz", freq);
 
         HodographObject HOFirstMax = getFirstMax(hoList);
         HodographObject HOLastMax = getLastMax(hoList);
@@ -179,15 +250,8 @@ public class Normalization {
         Integer NumOfPoints = new Double((endBound - firstBound) / step).intValue();
 
         double alignmentDisplacement = zeroHO.getDisplacement();
-//        if (numIsOdd(NumOfPoints.intValue())) {//не делится на 2 -> одна средняя точка
-//            HodographObject middlePoint = hoList.get(hoList.indexOf(HOFirstMax) + ((NumOfPoints - 1) / 2));
-//            alignmentDisplacement = middlePoint.getDisplacement() - 0;
-//        } else {
-//            HodographObject middlePoint_1 = hoList.get(hoList.indexOf(HOFirstMax) + ((NumOfPoints) / 2));
-//            alignmentDisplacement = middlePoint_1.getDisplacement() / 2;
-//        }
 
-        log.info("AlignmentDisplacement: {}", alignmentDisplacement);
+        //log.info("AlignmentDisplacement: {}", alignmentDisplacement);
         double finalAlignmentDisplacement = alignmentDisplacement;
 
         hoList.stream().forEach(ho ->
@@ -214,8 +278,8 @@ public class Normalization {
             Double delta = (ho_prev.complexNumber.abs() * 10000) - (ho.complexNumber.abs() * 10000);
             if (delta > 0 && i >= list.size() / 4) {
                 list.get(i - 1).setFirstAmpMax(true);
-                System.out.println("FirstMax:\n i = " + i + "| abs = " + ho.complexNumber.abs() * 1000 + "| disp = " + ho.getDisplacement() * 1000);
-                System.out.println("\n i-1 = " + (i - 1) + "| abs = " + ho_prev.complexNumber.abs() * 1000 + "| disp = " + ho_prev.getDisplacement() * 1000);
+//                System.out.println("FirstMax:\n i = " + i + "| abs = " + ho.complexNumber.abs() * 1000 + "| disp = " + ho.getDisplacement() * 1000);
+//                System.out.println("\n i-1 = " + (i - 1) + "| abs = " + ho_prev.complexNumber.abs() * 1000 + "| disp = " + ho_prev.getDisplacement() * 1000);
                 return list.get(i - 1);
             }
             i = i + 1;
@@ -234,8 +298,8 @@ public class Normalization {
 
             Double delta = (ho_prev.complexNumber.abs() * 1000) - (ho.complexNumber.abs() * 1000);
             if (delta > 0 && (list.size() - i) >= list.size() / 4) {
-                System.out.println("LastMax:\n i = " + i + "| abs = " + list.get(i).complexNumber.abs() + "| disp = " + list.get(i).getDisplacement());
-                System.out.println("\n i+1 = " + (i + 1) + "| abs = " + list.get(i + 1).complexNumber.abs() + "| disp = " + list.get(i + 1).getDisplacement());
+//                System.out.println("LastMax:\n i = " + i + "| abs = " + list.get(i).complexNumber.abs() + "| disp = " + list.get(i).getDisplacement());
+//                System.out.println("\n i+1 = " + (i + 1) + "| abs = " + list.get(i + 1).complexNumber.abs() + "| disp = " + list.get(i + 1).getDisplacement());
                 return list.get(i + 1);
             }
             i = i - 1;

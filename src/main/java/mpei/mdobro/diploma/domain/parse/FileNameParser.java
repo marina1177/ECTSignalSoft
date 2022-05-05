@@ -31,10 +31,14 @@ public class FileNameParser {
             return DefectTypes.RECT;
         else if (defectTypeString.contains("tri"))
             return DefectTypes.TRI;
-        else if (defectTypeString.contains("poligon"))
+        else if (defectTypeString.contains("poligon") && wordArray[1].contains("double")) {
+            switch (wordArray[2]) {
+                case "30": return DefectTypes.PLGN_W_30;
+                case "45": return DefectTypes.PLGN_W_45;
+                case "60": return DefectTypes.PLGN_W_60;
+            }
             return DefectTypes.PLGN;
-
-        else {
+        } else {
             log.debug("Unknown defect type: {}", defectTypeString);
             return DefectTypes.UNKNOUWN_TYPE;
         }
