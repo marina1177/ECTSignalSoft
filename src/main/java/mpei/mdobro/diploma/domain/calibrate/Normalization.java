@@ -100,7 +100,7 @@ public class Normalization {
 //        return limitObj;
 //    }
 
-    private Map<Integer, List<HodographObject>> arrangeByDeep(List<HodographObject> limitsObjectList) {
+    public Map<Integer, List<HodographObject>> arrangeByDeep(List<HodographObject> limitsObjectList) {
         Map<Integer, List<HodographObject>> deepToHodographs = new HashMap<>();
 
         limitsObjectList.sort(Comparator
@@ -150,7 +150,7 @@ public class Normalization {
                             System.out.println("FIRST_IM_MAX");
                         }
                         case MAX_AMPLITUDE: {
-                            System.out.println("MAX_AMPLITUDE");
+                            //System.out.println("MAX_AMPLITUDE");
                             HodographObject limitObj = applyFirstMaxAlgorithm(deepEntry.getValue(), freqEntry.getKey());
                             deepEntry.setValue(new LinkedList<>(Arrays.asList(limitObj)));
                         }
@@ -182,7 +182,7 @@ public class Normalization {
                             System.out.println("FIRST_IM_MAX");
                         }
                         case MAX_AMPLITUDE: {
-                            System.out.println("MAX_AMPLITUDE");
+                            //System.out.println("MAX_AMPLITUDE");
                             HodographObject limitObj = applyFirstMaxAlgorithm(deepEntry.getValue(), freqEntry.getKey());
                             limitsObjectList.add(limitObj);
                         }

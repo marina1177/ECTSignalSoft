@@ -8,7 +8,6 @@ import org.apache.commons.math3.complex.Complex;
 
 @Data
 @Slf4j
-//@Builder
 @RequiredArgsConstructor
 public class HodographObject implements Comparable<HodographObject> {
 

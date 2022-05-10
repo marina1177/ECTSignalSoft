@@ -57,7 +57,7 @@ public class Main {
 
             PaintPlots painter = new PaintPlots(freqHOMap);
 
-//            painter.plotHodographs();
+            //painter.plotHodographs();
 
             //=======================================LIMITS==============================
 
@@ -75,7 +75,7 @@ public class Main {
             Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleList
                     = fileToCollections.convertCommonListToLimitsCurvesMap(commonList, AlgorithmType.MAX_AMPLITUDE);
 
-            painter.setFreqToDeepAndLengthAngleList(freqToDeepAndLengthAngleList);
+            painter.setFreqToDeepAndLengthAngleLimitList(freqToDeepAndLengthAngleList);
             //painter.plotPhaseLengthCurves();
 
             //plot 5 limits curves for 3 frequencies
@@ -83,7 +83,7 @@ public class Main {
 
 
             //=======================================DATA==============================
-
+//
             File dataModelDir = new File(DATA_DIR);
             List<File> dataModelFiles = Arrays.stream(dataModelDir.listFiles()).collect(Collectors.toList());
 
@@ -102,15 +102,16 @@ public class Main {
                     hodographsDifferentTypes.add(commonDataList);
                 }
             }
-            System.out.println("Saved hodographs!");
+            //System.out.println("Saved hodographs!");
             Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleModelList
                     = fileToCollections.convertCommonDataListToCommonFreqMap(
                             hodographsDifferentTypes, AlgorithmType.MAX_AMPLITUDE);
 
-            // разместить данные на LIMIT графике, подписать точки (tri/rect/pol_% - deep=%)
-//            painter.setDefectTypeToFreqToDeepAndLengthAngleModelList(defectTypeToFreqToDeepAndLengthAngleModelList);
-//            painter.plotModelDataAmongLimits();
 
+
+            // разместить данные на LIMIT графике, подписать точки (tri/rect/pol_% - deep=%)
+            painter.setFreqToDeepAndLengthAngleModelList(freqToDeepAndLengthAngleModelList);
+            painter.plotModelDataAmongLimits();
         }
     }
 

@@ -11,6 +11,7 @@ import org.knowm.xchart.XYChartBuilder;
 import org.knowm.xchart.XYSeries;
 import org.knowm.xchart.style.Styler;
 import org.knowm.xchart.style.lines.SeriesLines;
+import org.knowm.xchart.style.markers.Marker;
 import org.knowm.xchart.style.markers.SeriesMarkers;
 
 import java.awt.*;
@@ -28,32 +29,33 @@ public class PaintPlots {
     private final Map<Integer, List<HodographObject>> map;
 
     private Map<Integer, Map<Integer, List<HodographObject>>>
-            freqToDeepAndLengthAngleList;
-    private Map<DefectTypes, Map<Integer, Map<Integer, List<HodographObject>>>>
-            defectTypeToFreqToDeepAndLengthAngleModelList;
-
+            freqToDeepAndLengthAngleLimitList;
+    //    private Map<DefectTypes, Map<Integer, Map<Integer, List<HodographObject>>>>
+//            defectTypeToFreqToDeepAndLengthAngleModelList;
+    private Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleModelList;
 
     public void plotPODCurves() {
 
     }
 
     public void plotModelDataAmongLimits() {
-//
-//        List<XYChart> charts = new ArrayList<>();
-//        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry : freqToDeepAndLengthAngleList.entrySet()) {
-//
-//            XYChart chart = getLengthPhaseChartWithData(entry.getKey(),
-//                    freqToDeepAndLengthAngleModelList.get(entry.getKey()),
-//                    entry.getValue());
-//            charts.add(chart);
-//
-//        }
-//        new SwingWrapper<XYChart>(charts).displayChartMatrix();
+
+        List<XYChart> charts = new ArrayList<>();
+        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> limitEntry : freqToDeepAndLengthAngleLimitList.entrySet()) {
+
+            XYChart chart = getLengthPhaseChartWithData(limitEntry.getKey(), limitEntry.getValue(),
+                    freqToDeepAndLengthAngleModelList.get(limitEntry.getKey()));
+            charts.add(chart);
+        }
+        for (XYChart chart : charts) {
+            new SwingWrapper<XYChart>(chart).displayChart();
+        }
+
     }
 
     private XYChart getLengthPhaseChartWithData(Integer freq,
-                                                Map<Integer, List<HodographObject>> deepToDataPoints,
-                                                Map<Integer, List<HodographObject>> deepToLimitPoints) {
+                                                Map<Integer, List<HodographObject>> deepToLimitPoints,
+                                                Map<Integer, List<HodographObject>> deepToDataPoints) {
         XYChart chart = new XYChartBuilder()
                 .title("Length-Phase Curve: " + freq + "kHz")
                 .xAxisTitle("Length of defect [mm]")
@@ -65,54 +67,89 @@ public class PaintPlots {
         chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideSW);
         chart.getStyler().setToolTipsEnabled(true);
 
-        XYSeries seriesData;
-        //для каждой глубины своя прямая
-        for (Map.Entry<Integer, List<HodographObject>> deepHO : deepToDataPoints.entrySet()) {
-            // deepHO: 5 точек для графика
-            deepHO.getValue().sort(Comparator
-                    .comparing(HodographObject::getDefectLength));
-            List<Double> xData = deepHO.getValue().stream().map(HodographObject::getDefectLength).collect(Collectors.toList());
-            List<Double> yData = deepHO.getValue().stream().map(o -> o.getComplexNumber().getArgument() * 180 / PI).collect(Collectors.toList());
-
-            seriesData = chart.addSeries("deep = " + deepHO.getKey() +
-                            "; type = " + deepHO.getValue().get(0).getTypeDefect(),
-                    xData, yData);
-            seriesData.setLineStyle(SeriesLines.NONE);
-            chart.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
-
-            if (deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.RECT))
-                seriesData.setMarker(SeriesMarkers.RECTANGLE);
-            else if (deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.TRI))
-                seriesData.setMarker(SeriesMarkers.TRIANGLE_UP);
-            else if (deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.PLGN_W_30)
-                    || deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.PLGN_W_45)
-                    || deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.PLGN_W_60)
-                    || deepHO.getValue().get(0).getTypeDefect().equals(DefectTypes.PLGN))
-                seriesData.setMarker(SeriesMarkers.TRAPEZOID);
-        }
-
         XYSeries seriesLimits;
         for (Map.Entry<Integer, List<HodographObject>> deepHO : deepToLimitPoints.entrySet()) {
             // deepHO: 5 точек для графика
             deepHO.getValue().sort(Comparator
                     .comparing(HodographObject::getDefectLength));
-            List<Double> xData = deepHO.getValue().stream().map(HodographObject::getDefectLength).collect(Collectors.toList());
-            List<Double> yData = deepHO.getValue().stream().map(o -> o.getComplexNumber().getArgument() * 180 / PI).collect(Collectors.toList());
 
-            seriesLimits = chart.addSeries("deep = " + deepHO.getKey(), xData, yData);
-            seriesLimits.setMarker(SeriesMarkers.CIRCLE);
+            seriesLimits = fillChart(deepHO.getValue(), chart, "deep = " + deepHO.getKey());
+            seriesLimits.setLineStyle(SeriesLines.SOLID);
+            seriesLimits.setLineWidth(20);
         }
+
+        ArrayList<String> labels = new ArrayList<>();
+        XYSeries seriesData = null;
+        //для каждой глубины своя прямая
+        for (Map.Entry<Integer, List<HodographObject>> deepHO : deepToDataPoints.entrySet()) {
+
+            deepHO.getValue().sort(Comparator
+                    .comparing(HodographObject::getTypeDefect));
+            DefectTypes tmpDefectType = deepHO.getValue().get(0).getTypeDefect();
+            List<HodographObject> tmpList = new ArrayList<>();
+
+            for (HodographObject point : deepHO.getValue()) {
+
+                if ((point.getTypeDefect() != tmpDefectType)) {
+
+                    seriesData = fillChart(tmpList, chart, "deep = " + deepHO.getKey() +
+                            "; type = " + tmpDefectType);
+                    labels.add(tmpDefectType.name());
+                    tmpList = new ArrayList<>();
+                    tmpDefectType = point.getTypeDefect();
+                }
+                tmpList.add(point);
+
+                if (deepHO.getValue().indexOf(point) == deepHO.getValue().size() - 1) {
+                    seriesData = fillChart(tmpList, chart, "deep = " + deepHO.getKey() +
+                            "; type = " + tmpDefectType);
+                    labels.add(tmpDefectType.name());
+                    tmpList = new ArrayList<>();
+                    tmpDefectType = point.getTypeDefect();
+                }
+            }
+        }
+
         return chart;
+    }
+
+    private XYSeries fillChart(List<HodographObject> tmpList, XYChart chart, String seriesString) {
+
+        List<Double> xData = tmpList.stream().map(HodographObject::getDefectLength).collect(Collectors.toList());
+        List<Double> yData = tmpList.stream().map(o -> o.getComplexNumber().getArgument() * 180 / PI).collect(Collectors.toList());
+        XYSeries seriesData = chart.addSeries(seriesString, xData, yData);
+        seriesData.setLineStyle(SeriesLines.NONE);
+        chart.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
+        seriesData.setMarker(getMarker(tmpList.get(0).getTypeDefect()));
+        chart.getStyler().setToolTipsEnabled(true);
+        chart.getStyler().setMarkerSize(16);
+        return seriesData;
+    }
+
+    private Marker getMarker(DefectTypes types) {
+        if (types.equals(DefectTypes.RECT))
+            return SeriesMarkers.RECTANGLE;
+        else if (types.equals(DefectTypes.TRI))
+            return (SeriesMarkers.TRIANGLE_UP);
+        else if (types.equals(DefectTypes.PLGN_W_30)
+                || types.equals(DefectTypes.PLGN_W_45)
+                || types.equals(DefectTypes.PLGN_W_60)
+                || types.equals(DefectTypes.PLGN))
+            return (SeriesMarkers.TRAPEZOID);
+
+        return SeriesMarkers.CIRCLE;
     }
 
     public void plotPhaseLengthCurves() {
         List<XYChart> charts = new ArrayList<>();
 
-        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry : freqToDeepAndLengthAngleList.entrySet()) {
+        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry : freqToDeepAndLengthAngleLimitList.entrySet()) {
             XYChart chart = getLengthPhaseChart(entry, "linear");
             charts.add(chart);
         }
-        new SwingWrapper<XYChart>(charts).displayChartMatrix();
+        for (XYChart chart : charts) {
+            new SwingWrapper<XYChart>(chart).displayChart();
+        }
     }
 
     private XYChart getLengthPhaseChart(Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry, String type) {
@@ -271,39 +308,4 @@ public class PaintPlots {
         return chart;
 
     }
-    //    private TableXYDataset createTableXYDataset1() {
-//        DefaultTableXYDataset dataset = new DefaultTableXYDataset();
-//
-//        // Series
-//        List<Double> xData = new ArrayList();
-//        List<Double> yData = new ArrayList();
-//        ;
-//        dataset.addSeries(s1);
-//
-//
-//        return dataset;
-//    }
-//
-//    private JFreeChart getImPartJChart(Map.Entry<Integer,List<HodographObject>> entry){
-//// Series
-//        List<Double> xData = new ArrayList();
-//        List<Double> yData = new ArrayList();
-//        entry.getValue().forEach(o->{
-//            xData.add(o.getDisplacement());
-//            yData.add(o.getComplexNumber().getImaginary());
-//        });
-//
-//        XYSeries series = chartIm.addSeries(entry.getKey()+"[kHz]", xData, yData);
-//        series.setFillColor(Color.ORANGE);
-//
-//        JFreeChart chartIm =
-//                ChartFactory.createHistogram("Imaginary part: "+entry.getKey()+"kHz",
-//                        "",
-//                        "",
-//                        dataset,
-//                        PlotOrientation.VERTICAL, true, true, false);
-//
-//        return chartIm;
-//    }
-
 }

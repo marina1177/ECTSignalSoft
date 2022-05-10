@@ -47,8 +47,7 @@ public class FileToCollections {
         Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> commonBuffer = new HashMap<>();
 
         for (List<HodographObject> hodographObjectList : hodographsDifferentTypes) {
-            System.out.println("======================TYPE = "+hodographObjectList.get(0).getTypeDefect()
-            +"==============================\n");
+
             //еще не отдельные годографы, а много их
             Map<Integer, List<HodographObject>> freqAndManyHodoraphsList
                     = getFreqAndManyHodographsMap(hodographObjectList);
@@ -59,62 +58,81 @@ public class FileToCollections {
             Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqToLengthToDeepAndHodograph
                     = getFreqToLengthToDeepAndLimitsHO(freqToLengthAndHodograph);
 
-
             // разбить нормализацию годографов и вернуть мапу
             // Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>>
             // где в списке будет одна точка для этого дефекта
             norm.returnMapWitNormalizedPointsForDifferentDefectTypes(freqToLengthToDeepAndHodograph, algorithmType);
-            System.out.println("Parse and save points for single Hodo!");
 
             // проверить внешний буффер на ключи и
             // либо добавить новые ключи с точкой либо доложить точку в список
             putPointsToCommonBuffer(commonBuffer, freqToLengthToDeepAndHodograph);
-
-            // усреднить все точки в списке - преобразовать в мапу
-            // Map<Integer, Map<Integer, List<HodographObject>>>
-
-            //Map<Integer, Map<Integer, List<HodographObject>>>
-
-            // нарисовать
         }
+        //- преобразовать в мапу
+        Map<Integer, Map<Integer, List<HodographObject>>> pointsForResearch =
+                convertCommonBufferToFreqToLengthToPointsList(commonBuffer);
 
+        // ??? усреднить все точки в списке - преобразовать в мапу
+
+        //Map<Integer, Map<Integer, List<HodographObject>>>
+
+        // нарисовать
         System.out.println("!");
 
-        return null;
+        return pointsForResearch;
     }
 
-   private void  putPointsToCommonBuffer(Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> commonBuffer,
+    Map<Integer, Map<Integer, List<HodographObject>>> convertCommonBufferToFreqToLengthToPointsList(Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> commonBuffer) {
+
+        Map<Integer, Map<Integer, List<HodographObject>>> limitsCurves = new HashMap<>();//freq ->deep -> [length1, phase1],[l2,p2]...
+
+        for (Map.Entry<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqEntry : commonBuffer.entrySet()) {
+
+            List<HodographObject> limitsObjectList = new ArrayList<>();
+
+            for (Map.Entry<Double, Map<Integer, List<HodographObject>>> lenEntry : freqEntry.getValue().entrySet()) {
+
+                for (Map.Entry<Integer, List<HodographObject>> deepEntry : lenEntry.getValue().entrySet()) {
+
+                    limitsObjectList.addAll(deepEntry.getValue());
+                }
+            }
+            limitsCurves.put(freqEntry.getKey(), norm.arrangeByDeep(limitsObjectList));
+        }
+    return limitsCurves;
+}
+
+    private void putPointsToCommonBuffer(Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> commonBuffer,
                                          Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqToLengthToDeepAndHodograph) {
 
-       for (Map.Entry<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqEntry : freqToLengthToDeepAndHodograph.entrySet()) {
+        for (Map.Entry<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqEntry : freqToLengthToDeepAndHodograph.entrySet()) {
 
-           if (!commonBuffer.containsKey(freqEntry.getKey())) {
-               commonBuffer.put(freqEntry.getKey(), freqEntry.getValue());
-               continue;
-           }
-           for (Map.Entry<Double, Map<Integer, List<HodographObject>>> lenEntry : freqEntry.getValue().entrySet()) {
-               Map<Double, Map<Integer, List<HodographObject>>> tmpLen = commonBuffer.get(freqEntry.getKey());
-               if (!tmpLen.containsKey(lenEntry.getKey())) {
-                   commonBuffer.get(freqEntry.getKey()).put(lenEntry.getKey(), lenEntry.getValue());
-                   continue;
-               }
-               for (Map.Entry<Integer, List<HodographObject>> deepEntry : lenEntry.getValue().entrySet()) {
-                   Map<Integer, List<HodographObject>> tmpDeep = commonBuffer.get(freqEntry.getKey()).get(lenEntry.getKey());
-                   if (!tmpDeep.containsKey(deepEntry.getKey())) {
-                       commonBuffer.get(freqEntry.getKey()).get(lenEntry.getKey()).put(deepEntry.getKey(), deepEntry.getValue());
-                       continue;
-                   }else {
+            if (!commonBuffer.containsKey(freqEntry.getKey())) {
+                commonBuffer.put(freqEntry.getKey(), freqEntry.getValue());
+                continue;
+            }
+            for (Map.Entry<Double, Map<Integer, List<HodographObject>>> lenEntry : freqEntry.getValue().entrySet()) {
+                Map<Double, Map<Integer, List<HodographObject>>> tmpLen = commonBuffer.get(freqEntry.getKey());
+                if (!tmpLen.containsKey(lenEntry.getKey())) {
+                    commonBuffer.get(freqEntry.getKey()).put(lenEntry.getKey(), lenEntry.getValue());
+                    continue;
+                }
+                for (Map.Entry<Integer, List<HodographObject>> deepEntry : lenEntry.getValue().entrySet()) {
+                    Map<Integer, List<HodographObject>> tmpDeep = commonBuffer.get(freqEntry.getKey()).get(lenEntry.getKey());
+                    if (!tmpDeep.containsKey(deepEntry.getKey())) {
+                        commonBuffer.get(freqEntry.getKey()).get(lenEntry.getKey()).put(deepEntry.getKey(), deepEntry.getValue());
+                        continue;
+                    } else {
 
-                            commonBuffer.get(freqEntry.getKey())
-                               .get(lenEntry.getKey())
-                                    .get(deepEntry.getKey())
-                                    .add(deepEntry.getValue().get(0));
-                   }
+                        commonBuffer.get(freqEntry.getKey())
+                                .get(lenEntry.getKey())
+                                .get(deepEntry.getKey())
+                                .add(deepEntry.getValue().get(0));
+                    }
 
-               }
-           }
-       }
-   }
+                }
+            }
+        }
+    }
 
     public Map<Integer, Map<Integer, List<HodographObject>>> convertCommonListToLimitsCurvesMap(List<HodographObject> hodographObjectList,
                                                                                                 AlgorithmType algorithmType) {
