@@ -75,7 +75,7 @@ public class PaintPlots {
 
             seriesLimits = fillChart(deepHO.getValue(), chart, "deep = " + deepHO.getKey());
             seriesLimits.setLineStyle(SeriesLines.SOLID);
-            seriesLimits.setLineWidth(20);
+            seriesLimits.setLineWidth(30);
         }
 
         ArrayList<String> labels = new ArrayList<>();
@@ -84,7 +84,10 @@ public class PaintPlots {
         for (Map.Entry<Integer, List<HodographObject>> deepHO : deepToDataPoints.entrySet()) {
 
             deepHO.getValue().sort(Comparator
+                    .comparing(HodographObject::getDefectLength));
+            deepHO.getValue().sort(Comparator
                     .comparing(HodographObject::getTypeDefect));
+
             DefectTypes tmpDefectType = deepHO.getValue().get(0).getTypeDefect();
             List<HodographObject> tmpList = new ArrayList<>();
 
@@ -121,6 +124,8 @@ public class PaintPlots {
         seriesData.setLineStyle(SeriesLines.NONE);
         chart.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
         seriesData.setMarker(getMarker(tmpList.get(0).getTypeDefect()));
+        seriesData.setLineWidth(5);
+        seriesData.setLineStyle(SeriesLines.DASH_DASH);
         chart.getStyler().setToolTipsEnabled(true);
         chart.getStyler().setMarkerSize(16);
         return seriesData;
@@ -173,6 +178,7 @@ public class PaintPlots {
             List<Double> yData = deepHO.getValue().stream().map(o -> o.getComplexNumber().getArgument() * 180 / PI).collect(Collectors.toList());
 
             series = chart.addSeries("deep = " + deepHO.getKey(), xData, yData);
+            series.setLineWidth(5);
             series.setMarker(SeriesMarkers.CIRCLE);
         }
         return chart;

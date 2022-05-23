@@ -68,8 +68,11 @@ public class FileToCollections {
             putPointsToCommonBuffer(commonBuffer, freqToLengthToDeepAndHodograph);
         }
         //- преобразовать в мапу
-        Map<Integer, Map<Integer, List<HodographObject>>> pointsForResearch =
+        Map<Integer, Map<Integer, List<HodographObject>>> allPointsForResearch =
                 convertCommonBufferToFreqToLengthToPointsList(commonBuffer);
+
+//        Map<Integer, Map<DefectTypes, Map<Integer, List<HodographObject>>>> pointsForResearch =
+//                convertCommonBufferToFreqToDefectTypeLengthToPointsList(commonBuffer);
 
         // ??? усреднить все точки в списке - преобразовать в мапу
 
@@ -78,7 +81,7 @@ public class FileToCollections {
         // нарисовать
         System.out.println("!");
 
-        return pointsForResearch;
+        return allPointsForResearch;
     }
 
     Map<Integer, Map<Integer, List<HodographObject>>> convertCommonBufferToFreqToLengthToPointsList(Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> commonBuffer) {

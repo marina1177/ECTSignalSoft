@@ -6,6 +6,8 @@ mpei/mdobro/diploma/domain/print/PaintPlots.java
 mpei/mdobro/diploma/domain/print/Drawer.java
  mpei.mdobro.diploma.domain.print.Drawer
  mpei.mdobro.diploma.domain.print.Drawer$1
+mpei/mdobro/diploma/tables/TableWriter.java
+ mpei.mdobro.diploma.tables.TableWriter
 mpei/mdobro/diploma/Utils.java
  mpei.mdobro.diploma.Utils
 mpei/mdobro/diploma/domain/parse/HodographObject.java
@@ -14,6 +16,8 @@ mpei/mdobro/diploma/domain/parse/FileToCollections.java
  mpei.mdobro.diploma.domain.parse.FileToCollections
 mpei/mdobro/diploma/domain/parse/AlgorithmType.java
  mpei.mdobro.diploma.domain.parse.AlgorithmType
+mpei/mdobro/diploma/domain/parse/CollectHodographObjects.java
+ mpei.mdobro.diploma.domain.parse.CollectHodographObjects
 mpei/mdobro/diploma/configurations/NormalizationConfig.java
  mpei.mdobro.diploma.configurations.NormalizationConfig
 mpei/mdobro/diploma/domain/constants/AppConstants.java
@@ -24,13 +28,13 @@ mpei/mdobro/diploma/domain/parse/ExcelFileFilter.java
  mpei.mdobro.diploma.domain.parse.ExcelFileFilter
 mpei/mdobro/diploma/domain/parse/ComplexNumber.java
  mpei.mdobro.diploma.domain.parse.ComplexNumber
+mpei/mdobro/diploma/Main.java
+ mpei.mdobro.diploma.Main
 mpei/mdobro/diploma/domain/parse/DefectTypes.java
  mpei.mdobro.diploma.domain.parse.DefectTypes
 mpei/mdobro/diploma/domain/parse/FileNameParser.java
  mpei.mdobro.diploma.domain.parse.FileNameParser
-mpei/mdobro/diploma/domain/parse/CollectHodographObjects.java
- mpei.mdobro.diploma.domain.parse.CollectHodographObjects
-mpei/mdobro/diploma/Main.java
- mpei.mdobro.diploma.Main
-mpei/mdobro/diploma/domain/research/ProcessResearch.java
- mpei.mdobro.diploma.domain.research.ProcessResearch
+mpei/mdobro/diploma/domain/research/ProcessPODResearch.java
+ mpei.mdobro.diploma.domain.research.ProcessPODResearch
+mpei/mdobro/diploma/domain/research/PODPrinter.java
+ mpei.mdobro.diploma.domain.research.PODPrinter

@@ -21,6 +21,7 @@ public class HodographObject implements Comparable<HodographObject> {
     public boolean firstImMax;
     private boolean firstAmpMax;
     public boolean firstReMax;
+    public  boolean detected;
 
     public int compareTo(HodographObject p) {
         return Double.valueOf(complexNumber.abs()).compareTo(Double.valueOf(p.getComplexNumber().abs()));
