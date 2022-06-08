@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mpei.mdobro.diploma.domain.parse.HodographObject;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,8 +29,67 @@ public class ProcessPODResearch {
     // nd - количество обнаруженных трещин размера/глубиной a
     // из n - общего числа трещин размера a в испытании.
 
+    public void runSimpleRegressionPODProcess() {
 
-    public void findPODProcess() {
+        Map<Integer, SimpleRegression> freqToRegression = getRegressionPerFreq();
+
+        for (Map.Entry<Integer, SimpleRegression> regressionEntry : freqToRegression.entrySet()) {
+            regressionEntry.getValue().regress();
+        }
+
+        System.out.println("regression full");
+        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> freqEntry : freqToDeepAndLengthAngleModelList.entrySet()) {
+
+            Map<Integer, Double> deepToPOD = new HashMap<>();
+            for (Map.Entry<Integer, List<HodographObject>> deepEntry : freqEntry.getValue().entrySet()) {
+
+                int N = 0;
+                int Nd = 0;
+
+                for (HodographObject deepHO : deepEntry.getValue()) {
+
+                    double isDetected = freqToRegression.get(freqEntry.getKey()).predict(deepHO.getComplexNumber().getArgument() * 180 / PI);
+                    if (Math.abs(isDetected)< 5) {
+                        Nd = Nd + 1;
+                        deepHO.setDetected(true);
+                    }else {deepHO.setDetected(false);}
+                    N = N + 1;
+
+                    if (deepEntry.getValue().indexOf(deepHO) == deepEntry.getValue().size() - 1) {
+                        Double POD = calculatePOD(deepEntry);
+                        deepToPOD.put(deepEntry.getKey(), POD);
+                    }
+                }
+
+            }
+
+            freqToDeepToPOD.put(freqEntry.getKey(), deepToPOD);
+        }
+        PODPrinter podPrinter = new PODPrinter();
+        podPrinter.print(freqToDeepToPOD);
+    }
+
+    Map<Integer, SimpleRegression> getRegressionPerFreq() {
+        Map<Integer, SimpleRegression> freqToRegression = new HashMap<>();
+
+        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> freqEntry : freqToDeepAndLengthAngleModelList.entrySet()) {
+
+            Map<Integer, List<HodographObject>> deepEntry = freqEntry.getValue();
+
+            SimpleRegression regression = new SimpleRegression();
+            for (int i = 0; i < deepEntry.get(60).size(); i++) {
+
+                Double length = deepEntry.get(60).get(i).defectLength;
+                Double phase = deepEntry.get(60).get(i).getComplexNumber().getArgument() * 180 / PI;
+
+                regression.addData(length, phase);
+            }
+            freqToRegression.put(freqEntry.getKey(), regression);
+        }
+        return freqToRegression;
+    }
+
+    public void runSimplePODProcess() {
         determineRangeByFreq();
 
         for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> freqEntry : freqToDeepAndLengthAngleModelList.entrySet()) {

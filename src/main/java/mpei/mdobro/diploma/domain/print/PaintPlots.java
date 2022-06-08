@@ -53,6 +53,10 @@ public class PaintPlots {
 
     }
 
+    public void calibrationCurvesPlots(){
+
+    }
+
     private XYChart getLengthPhaseChartWithData(Integer freq,
                                                 Map<Integer, List<HodographObject>> deepToLimitPoints,
                                                 Map<Integer, List<HodographObject>> deepToDataPoints) {
@@ -63,9 +67,15 @@ public class PaintPlots {
                 .width(600).height(400)
                 .build();
 
+        setChartStyle(chart);
         // Customize Chart
-        chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideSW);
-        chart.getStyler().setToolTipsEnabled(true);
+//        chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideSW);
+//        chart.getStyler().setChartTitleFont(new Font(Font.SERIF, Font.BOLD, 30));
+//        chart.getStyler().setAnnotationsFont(new Font(Font.SERIF, Font.PLAIN, 18));
+//        chart.getStyler().setAxisTitleFont(new Font(Font.SERIF, Font.BOLD, 18));
+//        chart.getStyler().setAxisTickLabelsFont(new Font(Font.SERIF, Font.BOLD, 18));
+//        chart.getStyler().setLegendFont(new Font(Font.SERIF, Font.PLAIN, 18));
+//        chart.getStyler().setToolTipsEnabled(true);
 
         XYSeries seriesLimits;
         for (Map.Entry<Integer, List<HodographObject>> deepHO : deepToLimitPoints.entrySet()) {
@@ -160,7 +170,7 @@ public class PaintPlots {
     private XYChart getLengthPhaseChart(Map.Entry<Integer, Map<Integer, List<HodographObject>>> entry, String type) {
 
         XYChart chart = new XYChartBuilder()
-                .title("Length-Phase Curve: " + entry.getKey() + "kHz")
+                .title("Length-Phase Curve: " + entry.getKey() + " kHz")
                 .xAxisTitle("Length of defect [mm]")
                 .yAxisTitle("Phase of defect [deg]")
                 .width(600).height(400)
@@ -168,6 +178,8 @@ public class PaintPlots {
 //        chart.getStyler().setYAxisMin(-180.0);
 //        chart.getStyler().setYAxisMax(180.0);
 
+        // Customize Chart
+        setChartStyle(chart);
         XYSeries series;
         //для каждой глубины своя прямая
         for (Map.Entry<Integer, List<HodographObject>> deepHO : entry.getValue().entrySet()) {
@@ -222,6 +234,8 @@ public class PaintPlots {
                 .yAxisTitle("Im[V]")
                 .build();
         chartIm.getStyler().setPlotGridLinesVisible(true);
+        chartIm.getStyler().setPlotGridVerticalLinesVisible(true);
+//        chartIm.getStyler().setPlotGridLinesVisible(true);
 
         // Series
         List<Double> xData = new ArrayList();
@@ -244,6 +258,7 @@ public class PaintPlots {
                 .yAxisTitle("Re[V]")
                 .build();
         chartRe.getStyler().setPlotGridLinesVisible(true);
+        chartRe.getStyler().setPlotGridVerticalLinesVisible(true);
 
         // Series
         List<Double> xData = new ArrayList();
@@ -267,8 +282,9 @@ public class PaintPlots {
                 .yAxisTitle("Im[V]")
                 .build();
 
+        //setChartStyle(chart_hod);
         chart_hod.getStyler().setPlotGridLinesVisible(true);
-        chart_hod.getStyler().setDatePattern("yyyy");
+        chart_hod.getStyler().setPlotGridVerticalLinesVisible(true);
         // Series
         List<Double> xData = new ArrayList();
         List<Double> yData = new ArrayList();
@@ -312,6 +328,18 @@ public class PaintPlots {
                 .getXMax();
 
         return chart;
+
+    }
+
+    private void setChartStyle(XYChart chart){
+        chart.getStyler().setPlotGridLinesVisible(true);
+        chart.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
+        chart.getStyler().setChartTitleFont(new Font(Font.SERIF, Font.BOLD, 30));
+        chart.getStyler().setAnnotationsFont(new Font(Font.SERIF, Font.PLAIN, 22));
+        chart.getStyler().setAxisTitleFont(new Font(Font.SERIF, Font.BOLD, 22));
+        chart.getStyler().setAxisTickLabelsFont(new Font(Font.SERIF, Font.BOLD, 22));
+        chart.getStyler().setLegendFont(new Font(Font.SERIF, Font.PLAIN, 22));
+        chart.getStyler().setToolTipsEnabled(true);
 
     }
 }

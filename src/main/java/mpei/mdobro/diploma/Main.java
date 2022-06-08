@@ -60,7 +60,8 @@ public class Main {
 
         PaintPlots painter = new PaintPlots(freqHOMap);
 
-        //painter.plotHodographs();
+       //painter.plotHodographs();
+
 
         //=======================================LIMITS==============================
 
@@ -78,8 +79,8 @@ public class Main {
         Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleList
                 = fileToCollections.convertCommonListToLimitsCurvesMap(commonList, AlgorithmType.MAX_AMPLITUDE);
 
-//        painter.setFreqToDeepAndLengthAngleLimitList(freqToDeepAndLengthAngleList);
-//        painter.plotPhaseLengthCurves();
+        painter.setFreqToDeepAndLengthAngleLimitList(freqToDeepAndLengthAngleList);
+        //painter.plotPhaseLengthCurves();
 
         //plot 5 limits curves for 3 frequencies
         // https://stackoverflow.com/questions/38931111/how-to-make-plots-in-java-like-in-matlab-same-syntax
@@ -111,12 +112,13 @@ public class Main {
                 hodographsDifferentTypes, AlgorithmType.MAX_AMPLITUDE);
 
         // разместить данные на LIMIT графике, подписать точки (tri/rect/pol_% - deep=%)
-//        painter.setFreqToDeepAndLengthAngleModelList(freqToDeepAndLengthAngleModelList);
-//        painter.plotModelDataAmongLimits();
+        painter.setFreqToDeepAndLengthAngleModelList(freqToDeepAndLengthAngleModelList);
+        //painter.plotModelDataAmongLimits();
+        painter.calibrationCurvesPlots();
 
         ProcessPODResearch podResearch = new ProcessPODResearch(freqToDeepAndLengthAngleList,
                 freqToDeepAndLengthAngleModelList);
-        podResearch.findPODProcess();
+        podResearch.runSimplePODProcess();
 
     }
 

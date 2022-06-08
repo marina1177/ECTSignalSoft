@@ -4,8 +4,10 @@ import org.knowm.xchart.SwingWrapper;
 import org.knowm.xchart.XYChart;
 import org.knowm.xchart.XYChartBuilder;
 import org.knowm.xchart.XYSeries;
+import org.knowm.xchart.style.Styler;
 import org.knowm.xchart.style.markers.SeriesMarkers;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,14 @@ public class PODPrinter {
                 .width(1000).height(800)
                 .build();
         chart.getStyler().setYAxisMin(0.0);
+
+        chart.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
+        chart.getStyler().setChartTitleFont(new Font(Font.SERIF, Font.BOLD, 30));
+        chart.getStyler().setAnnotationsFont(new Font(Font.SERIF, Font.PLAIN, 22));
+        chart.getStyler().setAxisTitleFont(new Font(Font.SERIF, Font.BOLD, 22));
+        chart.getStyler().setAxisTickLabelsFont(new Font(Font.SERIF, Font.BOLD, 22));
+        chart.getStyler().setLegendFont(new Font(Font.SERIF, Font.PLAIN, 22));
+
         chart.getStyler().setYAxisMax(1.0);
 
         XYSeries series;
