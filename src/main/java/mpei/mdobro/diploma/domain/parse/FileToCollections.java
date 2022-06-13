@@ -186,6 +186,21 @@ public class FileToCollections {
         return hodographObjectList;
     }
 
+    public List<NDTDataObject> convertFileToExperimentList(File f) {
+        if (!f.exists() && !f.isDirectory()) {
+            System.out.println("file [" + f.getName() + "] DON'T exist!");
+            System.exit(0);
+        }
+        log.info("file [{}] exist!", f.getName());
+
+        collectHodographObjects = new CollectHodographObjects(f);
+        List<NDTDataObject> hodographObjectList = fileToExperimentList(f);
+
+        hodographObjectList.sort(Comparator
+                .comparing(NDTDataObject::getFreq));
+
+        return hodographObjectList;
+    }
 
     private Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> getFreqToLengthToDeepAndLimitsHO(
             Map<Integer, Map<Double, List<HodographObject>>> freqToLengthAndHodograph) {
@@ -366,8 +381,6 @@ public class FileToCollections {
 
         List<HodographObject> tmpList = new ArrayList<>();
         int tmpFreq = hodographObjectList.get(0).getFreq();
-        int frequencyCounter = 0;
-
         for (HodographObject entity : hodographObjectList) {
 
             if ((entity.getFreq() != tmpFreq)) {
@@ -379,7 +392,6 @@ public class FileToCollections {
 
                 tmpList = new ArrayList<>();
                 tmpFreq = entity.getFreq();
-                frequencyCounter += 1;
             }
             tmpList.add(entity);
 
@@ -394,6 +406,52 @@ public class FileToCollections {
         return freqHOMap;
     }
 
+    public Map<Integer, List<NDTDataObject>> getFreqAndExperimentDataMap(List<NDTDataObject> ndtDataObjectList) {
+
+        //Map<Integer, List<NDTDataObject>> freqHOMap = new HashMap<>();
+        ndtDataObjectList.sort(Comparator
+                .comparing(NDTDataObject::getFreq));
+
+        Map<Integer, List<NDTDataObject>> freqHOMap = new HashMap<>();
+
+        List<NDTDataObject> tmpList = new ArrayList<>();
+        int tmpFreq = ndtDataObjectList.get(0).getFreq();
+        for (NDTDataObject entity : ndtDataObjectList) {
+
+            if ((entity.getFreq() != tmpFreq)) {
+
+                freqHOMap.put(tmpFreq, tmpList);
+
+                tmpList = new ArrayList<>();
+                tmpFreq = entity.getFreq();
+            }
+            tmpList.add(entity);
+
+            System.out.println("entityIndex: "+ndtDataObjectList.indexOf(entity) +" vs "+(ndtDataObjectList.size() - 1));
+            if (ndtDataObjectList.indexOf(entity) == ndtDataObjectList.size() - 1) {
+                freqHOMap.put(tmpFreq, tmpList);
+            }
+        }
+        return freqHOMap;
+    }
+
+    private List<NDTDataObject> fileToExperimentList(File f) {
+        List<NDTDataObject> ndtDataObjectList = null;
+        try {
+            FileInputStream fileInputStream = new FileInputStream(f.getPath());
+            XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream);
+            XSSFSheet sheet = workbook.getSheetAt(0);
+
+            ndtDataObjectList = collectHodographObjects
+                    .getListOfDataObjects(sheet, workbook);
+            fileInputStream.close();
+        } catch (Exception e) {
+            log.error("file to List process is failed!");
+            e.printStackTrace();
+        }
+        return ndtDataObjectList;
+    }
+
     private List<HodographObject> fileToList(File f) {
         List<HodographObject> hodographObjectList = null;
         try {
@@ -403,7 +461,6 @@ public class FileToCollections {
 
             hodographObjectList = collectHodographObjects
                     .getListOfHodographObjects(sheet, workbook);
-
             fileInputStream.close();
         } catch (Exception e) {
             log.error("file to List process is failed!");

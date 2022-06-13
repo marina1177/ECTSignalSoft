@@ -3,10 +3,7 @@ package mpei.mdobro.diploma;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import mpei.mdobro.diploma.domain.calibrate.Normalization;
-import mpei.mdobro.diploma.domain.parse.AlgorithmType;
-import mpei.mdobro.diploma.domain.parse.DefectTypes;
-import mpei.mdobro.diploma.domain.parse.FileToCollections;
-import mpei.mdobro.diploma.domain.parse.HodographObject;
+import mpei.mdobro.diploma.domain.parse.*;
 import mpei.mdobro.diploma.domain.print.PaintPlots;
 import mpei.mdobro.diploma.domain.research.ProcessPODResearch;
 
@@ -42,7 +39,55 @@ public class Main {
         //else
 
         //=======================================CALIBRATION==============================
-        File calibrationDir = new File(CALIBRATION_DIR);
+
+        Map<Integer, List<HodographObject>> freqHOMap = saveCalibrationData(new File(CALIBRATION_DIR));
+
+        PaintPlots painter = new PaintPlots(freqHOMap);
+        //painter.plotHodographs();
+
+        //=======================================LIMITS==============================
+
+        List<HodographObject> commonList = saveDataLimits(new File(LIMITS_DIR));
+        Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleList
+                = fileToCollections.convertCommonListToLimitsCurvesMap(commonList, AlgorithmType.MAX_AMPLITUDE);
+
+        painter.setFreqToDeepAndLengthAngleLimitList(freqToDeepAndLengthAngleList);
+        //painter.plotPhaseLengthCurves();
+
+        //=======================================DATA==============================
+
+        List<List<HodographObject>> hodographsDifferentTypes = saveData(new File(DATA_DIR));
+        Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleModelList
+                = fileToCollections.convertCommonDataListToCommonFreqMap(
+                hodographsDifferentTypes, AlgorithmType.MAX_AMPLITUDE);
+
+        painter.setFreqToDeepAndLengthAngleModelList(freqToDeepAndLengthAngleModelList);
+        //painter.plotModelDataAmongLimits();
+
+        //======================================= EXPERIMENT ==============================
+        File experimentDir = new File(EXPERIMENT_DIR);
+        Map<Integer, List<NDTDataObject>> experimentData = saveExperimentData(experimentDir);
+        //======================================= POD ==============================
+        ProcessPODResearch podResearch = new ProcessPODResearch(freqToDeepAndLengthAngleList,
+                freqToDeepAndLengthAngleModelList);
+        podResearch.runSimplePODProcess();
+    }
+
+    private static Map<Integer, List<NDTDataObject>> saveExperimentData(File experimentDir) {
+        List<File> files = Arrays.stream(experimentDir.listFiles()).collect(Collectors.toList());
+
+        List<NDTDataObject> commonList = new ArrayList<>();
+        for (File f : files) {
+            List<NDTDataObject> HOList = fileToCollections.convertFileToExperimentList(f);
+            commonList.addAll(HOList);
+        }
+
+        Map<Integer, List<NDTDataObject>> freqExperimentData = fileToCollections.getFreqAndExperimentDataMap(commonList);
+
+        return freqExperimentData;
+    }
+
+    private static Map<Integer, List<HodographObject>> saveCalibrationData(File calibrationDir) {
 
         List<File> files = Arrays.stream(calibrationDir.listFiles()).collect(Collectors.toList());
         File calibration100File = files.stream()
@@ -58,14 +103,11 @@ public class Main {
                 = fileToCollections.convertCalibrationFileToMap(calibration100File);
         norm.normalizeWithMaxAmplitude(freqHOMap);
 
-        PaintPlots painter = new PaintPlots(freqHOMap);
+        return freqHOMap;
+    }
 
-       //painter.plotHodographs();
+    private static List<HodographObject> saveDataLimits(File limitsDir) {
 
-
-        //=======================================LIMITS==============================
-
-        File limitsDir = new File(LIMITS_DIR);
         List<File> limitsFiles = Arrays.stream(limitsDir.listFiles()).collect(Collectors.toList());
 
         List<HodographObject> commonList = new ArrayList<>();
@@ -75,23 +117,15 @@ public class Main {
             // anotherList.addAll(list) will also just add the references
             commonList.addAll(HOList);
         }
+        return commonList;
+    }
 
-        Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleList
-                = fileToCollections.convertCommonListToLimitsCurvesMap(commonList, AlgorithmType.MAX_AMPLITUDE);
+    private static List<List<HodographObject>> saveData(File dataModelDir) {
 
-        painter.setFreqToDeepAndLengthAngleLimitList(freqToDeepAndLengthAngleList);
-        //painter.plotPhaseLengthCurves();
-
-        //plot 5 limits curves for 3 frequencies
-        // https://stackoverflow.com/questions/38931111/how-to-make-plots-in-java-like-in-matlab-same-syntax
-
-
-        //=======================================DATA==============================
-//
-        File dataModelDir = new File(DATA_DIR);
         List<File> dataModelFiles = Arrays.stream(dataModelDir.listFiles()).collect(Collectors.toList());
 
         List<List<HodographObject>> hodographsDifferentTypes = new ArrayList<>();
+
         for (File defectTypeDir : dataModelFiles) {
             DefectTypes type = parseDirNameAndGetDefectType(defectTypeDir.getName());
 
@@ -106,20 +140,7 @@ public class Main {
                 hodographsDifferentTypes.add(commonDataList);
             }
         }
-        //System.out.println("Saved hodographs!");
-        Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleModelList
-                = fileToCollections.convertCommonDataListToCommonFreqMap(
-                hodographsDifferentTypes, AlgorithmType.MAX_AMPLITUDE);
-
-        // разместить данные на LIMIT графике, подписать точки (tri/rect/pol_% - deep=%)
-        painter.setFreqToDeepAndLengthAngleModelList(freqToDeepAndLengthAngleModelList);
-        //painter.plotModelDataAmongLimits();
-        painter.calibrationCurvesPlots();
-
-        ProcessPODResearch podResearch = new ProcessPODResearch(freqToDeepAndLengthAngleList,
-                freqToDeepAndLengthAngleModelList);
-        podResearch.runSimplePODProcess();
-
+        return hodographsDifferentTypes;
     }
 
     public static DefectTypes parseDirNameAndGetDefectType(String dirName) {

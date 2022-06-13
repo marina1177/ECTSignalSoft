@@ -3,6 +3,7 @@ package mpei.mdobro.diploma.domain.parse;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -21,6 +22,81 @@ public class CollectHodographObjects {
     private final File fileName;
     private FileNameParser fileNameParser;
 
+    public List<NDTDataObject> getListOfDataObjects(XSSFSheet sheet, XSSFWorkbook workbook) throws ParseException {
+
+        fileNameParser = new FileNameParser(fileName);
+        DataFormatter formatter = new DataFormatter();
+        FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+        String cellValue = "";
+
+        List<NDTDataObject> ndtDataObjects = new ArrayList<>();
+        Map<Object, Integer> titleIndex = new HashMap<>();
+
+        for (Row row : sheet) {
+            //check if row is empty
+            Cell c = row.getCell(0);
+            if (c == null || c.getCellType() == CellType.BLANK) {
+                break;
+            }
+            int cellCount = 0;
+
+            List<Double> cellsValues = new ArrayList<>();
+            for (Cell cell : row) {
+                cellValue = formatter.formatCellValue(cell, evaluator);
+                if (row.getRowNum() == 0) {
+                    Map<Object, Integer> title = saveNDTDataTiteles(cellValue, cellCount);
+                    titleIndex.putAll(title);
+                } else {
+                    if (isNumeric(cellValue)) {
+                        NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
+                        Number number = format.parse(cellValue);
+                        cellsValues.add(number.doubleValue());
+                    }
+                }
+                cellCount++;
+            }
+            if (!cellsValues.isEmpty()) {
+
+                Integer deep = 0;
+                if (titleIndex.containsKey("deep[%]")) {
+                    Double deepDouble = cellsValues.get(titleIndex.get("deep[%]")).doubleValue() * 100;
+                    deep = deepDouble.intValue();
+                } else {
+                    deep = fileNameParser.getDefectDeep();
+                }
+
+                NDTDataObject ndtDataObject = new NDTDataObject(
+                        fileNameParser.getDefectType(),
+                        //cellsValues.get(titleIndex.get("description")).toString(),
+                        deep,
+                        cellsValues.get(titleIndex.get("frequency[kHz]")).intValue(),
+                        cellsValues.get(titleIndex.get("Amplitude[V]")).doubleValue(),
+                        cellsValues.get(titleIndex.get("Phase [deg]")).doubleValue(),
+                        cellsValues.get(titleIndex.get("rotated phase [deg]")).doubleValue(),
+                        cellsValues.get(titleIndex.get("number of experiment")).intValue()
+                );
+
+                ndtDataObjects.add(ndtDataObject);
+            }
+        }
+        return ndtDataObjects;
+    }
+
+    public static boolean isNumeric(String strNum) {
+        if (strNum == null) {
+            return false;
+        }
+        try {
+            double d = Double.parseDouble(strNum);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean isNumeric2(String str) {
+        return str.matches("-?\\d+(\\.\\d+)?");  //match a number with optional '-' and decimal.
+    }
 
     public List<HodographObject> getListOfHodographObjects(XSSFSheet sheet, XSSFWorkbook workbook) throws ParseException {
 
@@ -34,7 +110,7 @@ public class CollectHodographObjects {
 
         for (Row row : sheet) {
             //check if row is empty
-            Cell c = row.getCell(1);
+            Cell c = row.getCell(0);
             if (c == null || c.getCellType() == CellType.BLANK) {
                 break;
             }
@@ -83,8 +159,8 @@ public class CollectHodographObjects {
                 Double length = fileNameParser.getDefectLength();
                 if (length != 0.0 && titleIndex.containsKey("defect_length[mm]")) {
                     length = cellsValues.get(titleIndex.get("defect_length[mm]")).doubleValue();
-                    if (length < 1){
-                        length = length*1000;
+                    if (length < 1) {
+                        length = length * 1000;
                     }
                 }
 
@@ -109,5 +185,27 @@ public class CollectHodographObjects {
         return HOList;
     }
 
+    private Map<Object, Integer> saveNDTDataTiteles(String cellValue, int cellCount) {
+
+        Map<Object, Integer> titleIndex = new HashMap<>();
+        if (cellValue.contains("freq"))
+            titleIndex.put("frequency[kHz]", cellCount);
+        else if (cellValue.contains("deep"))
+            titleIndex.put("deep[%]", cellCount);
+        else if (cellValue.contains("Amp"))
+            titleIndex.put("Amplitude[V]", cellCount);
+        else if (cellValue.contains("rotate"))
+            titleIndex.put("rotated phase [deg]", cellCount);
+        else if (cellValue.contains("Phase"))
+            titleIndex.put("Phase [deg]", cellCount);
+        else if (cellValue.contains("Type"))
+            titleIndex.put("Type", cellCount);
+        else if (cellValue.contains("description"))
+            titleIndex.put("description", cellCount);
+        else if (cellValue.contains("Number"))
+            titleIndex.put("number of experiment", cellCount);
+
+        return titleIndex;
+    }
 
 }

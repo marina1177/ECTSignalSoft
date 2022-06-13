@@ -25,7 +25,9 @@ public class FileNameParser {
 
         if (defectTypeString.contains("calibration")) {
             return DefectTypes.CALIBRATION;
-        } else if (defectTypeString.contains("limit"))
+        }else if (defectTypeString.contains("Experiment"))
+            return DefectTypes.EXPERIMENT;
+        else if (defectTypeString.contains("limit"))
             return DefectTypes.LIMIT;
         else if (defectTypeString.contains("rect"))
             return DefectTypes.RECT;

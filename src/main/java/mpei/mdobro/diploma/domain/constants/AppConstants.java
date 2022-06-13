@@ -14,8 +14,9 @@ package mpei.mdobro.diploma.domain.constants;
         public static final String FILETYPE = ".txt";
         public static final String CALIBRATION_DIR = "src/main/resources/calibration";
         public static final String CALIBRATION_FILE = "src/main/resources/calibration/calibration_deep_100.xlsx";
-        public static final String LIMITS_DIR="src/main/resources/limits";
-        public static final String DATA_DIR="src/main/resources/data";
+        public static final String LIMITS_DIR = "src/main/resources/limits";
+        public static final String DATA_DIR = "src/main/resources/data";
+        public static final String EXPERIMENT_DIR = "src/main/resources/experiment";
         public static final Integer CALIBRATION_Amplitude = 10;
         public static final Integer CALIBRATION_Phase = 40;
     }
