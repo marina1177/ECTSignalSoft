@@ -28,9 +28,10 @@ public class NDTDataObject {
     public String toString() {
         return "NDTDataObject{" +
                 "freq=" + freq +
-                ", deep=" + deep +
+//                ", deep=" + deep +
                 ", \nphase:" + phase +
-                ", \nrotated phase:" + rotatedPhase +
+                ", rotated phase:" + rotatedPhase +
+                ", \nisDetected: " + detected +
                 "}\n";
     }
 }

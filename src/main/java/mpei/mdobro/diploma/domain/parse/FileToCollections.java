@@ -101,8 +101,8 @@ public class FileToCollections {
             }
             limitsCurves.put(freqEntry.getKey(), norm.arrangeByDeep(limitsObjectList));
         }
-    return limitsCurves;
-}
+        return limitsCurves;
+    }
 
     private void putPointsToCommonBuffer(Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> commonBuffer,
                                          Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> freqToLengthToDeepAndHodograph) {
@@ -200,6 +200,82 @@ public class FileToCollections {
                 .comparing(NDTDataObject::getFreq));
 
         return hodographObjectList;
+    }
+
+    public Map<Integer, Map<Integer, List<NDTDataObject>>> getFreqAndExperimentDataMap(List<NDTDataObject> ndtDataObjectList) {
+
+        //Map<Integer, List<NDTDataObject>> freqHOMap = new HashMap<>();
+
+
+        Map<Integer, List<NDTDataObject>> freqToNDTList = getFreqToExperimentObjects(ndtDataObjectList);
+        Map<Integer, Map<Integer, List<NDTDataObject>>> freqToDeepToNDT = getFreqToDeepAndExperimentObjects(freqToNDTList);
+
+        return freqToDeepToNDT;
+    }
+
+    private Map<Integer, Map<Integer, List<NDTDataObject>>> getFreqToDeepAndExperimentObjects(
+            Map<Integer, List<NDTDataObject>> freqToNDTMap) {
+
+        Map<Integer, Map<Integer, List<NDTDataObject>>> freqToDeepAndExperimentObjects = new HashMap<>();
+
+        for (Map.Entry<Integer, List<NDTDataObject>> entry : freqToNDTMap.entrySet()) {
+
+            //sort by length
+            entry.getValue().sort(Comparator
+                    .comparing(NDTDataObject::getDeep).reversed());
+
+            List<NDTDataObject> tmpList = new ArrayList<>();
+            Map<Integer, List<NDTDataObject>> lengthAndHodograph = new HashMap<>();
+
+            Integer tmpDeep = entry.getValue().get(0).getDeep();
+            for (NDTDataObject entity : entry.getValue()) {
+
+                if (!tmpDeep.equals(entity.getDeep())) {
+
+                    lengthAndHodograph.put(tmpDeep, tmpList);
+
+                    tmpList = new ArrayList<>();
+                    tmpDeep = entity.getDeep();
+                }
+                tmpList.add(entity);
+                if (entry.getValue().indexOf(entity) == entry.getValue().size() - 1) {
+                    lengthAndHodograph.put(tmpDeep, tmpList);
+                }
+            }
+            freqToDeepAndExperimentObjects.put(entry.getKey(), lengthAndHodograph);
+        }
+        return freqToDeepAndExperimentObjects;
+    }
+
+    private Map<Integer, List<NDTDataObject>> getFreqToExperimentObjects(List<NDTDataObject> ndtDataObjectList) {
+
+        ndtDataObjectList.sort(Comparator
+                .comparing(NDTDataObject::getFreq));
+
+        Map<Integer, List<NDTDataObject>> freqToNDTMap = new HashMap<>();
+
+        List<NDTDataObject> tmpList = new ArrayList<>();
+        int tmpFreq = ndtDataObjectList.get(0).getFreq();
+
+        for (NDTDataObject entity : ndtDataObjectList) {
+
+            if ((entity.getFreq() != tmpFreq)) {
+
+                freqToNDTMap.put(tmpFreq, tmpList);
+
+                tmpList = new ArrayList<>();
+                tmpFreq = entity.getFreq();
+            }
+            tmpList.add(entity);
+
+            System.out.println("entityIndex: " + ndtDataObjectList.indexOf(entity) + " vs " + (ndtDataObjectList.size() - 1));
+            if (ndtDataObjectList.indexOf(entity) == ndtDataObjectList.size() - 1) {
+                freqToNDTMap.put(tmpFreq, tmpList);
+            }
+        }
+
+
+        return freqToNDTMap;
     }
 
     private Map<Integer, Map<Double, Map<Integer, List<HodographObject>>>> getFreqToLengthToDeepAndLimitsHO(
@@ -400,35 +476,6 @@ public class FileToCollections {
                 sortByDisplacementAndDeep(tmpList);
                 norm.moveHodographAccordingZero(tmpList);
                 norm.editDisplacement(tmpFreq, tmpList);
-                freqHOMap.put(tmpFreq, tmpList);
-            }
-        }
-        return freqHOMap;
-    }
-
-    public Map<Integer, List<NDTDataObject>> getFreqAndExperimentDataMap(List<NDTDataObject> ndtDataObjectList) {
-
-        //Map<Integer, List<NDTDataObject>> freqHOMap = new HashMap<>();
-        ndtDataObjectList.sort(Comparator
-                .comparing(NDTDataObject::getFreq));
-
-        Map<Integer, List<NDTDataObject>> freqHOMap = new HashMap<>();
-
-        List<NDTDataObject> tmpList = new ArrayList<>();
-        int tmpFreq = ndtDataObjectList.get(0).getFreq();
-        for (NDTDataObject entity : ndtDataObjectList) {
-
-            if ((entity.getFreq() != tmpFreq)) {
-
-                freqHOMap.put(tmpFreq, tmpList);
-
-                tmpList = new ArrayList<>();
-                tmpFreq = entity.getFreq();
-            }
-            tmpList.add(entity);
-
-            System.out.println("entityIndex: "+ndtDataObjectList.indexOf(entity) +" vs "+(ndtDataObjectList.size() - 1));
-            if (ndtDataObjectList.indexOf(entity) == ndtDataObjectList.size() - 1) {
                 freqHOMap.put(tmpFreq, tmpList);
             }
         }

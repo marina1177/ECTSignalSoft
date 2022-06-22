@@ -32,13 +32,13 @@ mpei/mdobro/diploma/domain/parse/ExcelFileFilter.java
  mpei.mdobro.diploma.domain.parse.ExcelFileFilter
 mpei/mdobro/diploma/domain/research/ProcessPODResearch.java
  mpei.mdobro.diploma.domain.research.ProcessPODResearch
-mpei/mdobro/diploma/Main.java
- mpei.mdobro.diploma.Main
+mpei/mdobro/diploma/domain/parse/ComplexNumber.java
+ mpei.mdobro.diploma.domain.parse.ComplexNumber
 mpei/mdobro/diploma/domain/parse/DefectTypes.java
  mpei.mdobro.diploma.domain.parse.DefectTypes
 mpei/mdobro/diploma/domain/parse/FileNameParser.java
  mpei.mdobro.diploma.domain.parse.FileNameParser
 mpei/mdobro/diploma/domain/parse/CollectHodographObjects.java
  mpei.mdobro.diploma.domain.parse.CollectHodographObjects
-mpei/mdobro/diploma/domain/parse/ComplexNumber.java
- mpei.mdobro.diploma.domain.parse.ComplexNumber
+mpei/mdobro/diploma/Main.java
+ mpei.mdobro.diploma.Main

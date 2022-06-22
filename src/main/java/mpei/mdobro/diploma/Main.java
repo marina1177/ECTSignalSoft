@@ -66,14 +66,19 @@ public class Main {
 
         //======================================= EXPERIMENT ==============================
         File experimentDir = new File(EXPERIMENT_DIR);
-        Map<Integer, List<NDTDataObject>> experimentData = saveExperimentData(experimentDir);
+
+        Map<Integer, Map<Integer, List<NDTDataObject>>> experimentData = saveExperimentData(experimentDir);
+
+
         //======================================= POD ==============================
-        ProcessPODResearch podResearch = new ProcessPODResearch(freqToDeepAndLengthAngleList,
-                freqToDeepAndLengthAngleModelList);
-        podResearch.runSimplePODProcess();
+
+//        ProcessPODResearch podResearch = new ProcessPODResearch(freqToDeepAndLengthAngleList,
+//                freqToDeepAndLengthAngleModelList, experimentData);
+//
+//        podResearch.runSimplePODProcess();
     }
 
-    private static Map<Integer, List<NDTDataObject>> saveExperimentData(File experimentDir) {
+    private static Map<Integer, Map<Integer, List<NDTDataObject>>> saveExperimentData(File experimentDir) {
         List<File> files = Arrays.stream(experimentDir.listFiles()).collect(Collectors.toList());
 
         List<NDTDataObject> commonList = new ArrayList<>();
@@ -82,7 +87,8 @@ public class Main {
             commonList.addAll(HOList);
         }
 
-        Map<Integer, List<NDTDataObject>> freqExperimentData = fileToCollections.getFreqAndExperimentDataMap(commonList);
+        Map<Integer, Map<Integer, List<NDTDataObject>>> freqExperimentData
+                = fileToCollections.getFreqAndExperimentDataMap(commonList);
 
         return freqExperimentData;
     }
@@ -127,7 +133,6 @@ public class Main {
         List<List<HodographObject>> hodographsDifferentTypes = new ArrayList<>();
 
         for (File defectTypeDir : dataModelFiles) {
-            DefectTypes type = parseDirNameAndGetDefectType(defectTypeDir.getName());
 
             if (defectTypeDir.isDirectory()) {
                 List<File> dataTypeFiles = Arrays.stream(defectTypeDir.listFiles()).collect(Collectors.toList());
