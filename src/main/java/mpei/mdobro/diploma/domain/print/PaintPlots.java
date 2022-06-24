@@ -53,9 +53,6 @@ public class PaintPlots {
 
     }
 
-    public void calibrationCurvesPlots(){
-
-    }
 
     private XYChart getLengthPhaseChartWithData(Integer freq,
                                                 Map<Integer, List<HodographObject>> deepToLimitPoints,
@@ -137,7 +134,7 @@ public class PaintPlots {
         seriesData.setLineWidth(5);
         seriesData.setLineStyle(SeriesLines.DASH_DASH);
         chart.getStyler().setToolTipsEnabled(true);
-        chart.getStyler().setMarkerSize(16);
+        chart.getStyler().setMarkerSize(18);
         return seriesData;
     }
 
@@ -152,7 +149,7 @@ public class PaintPlots {
                 || types.equals(DefectTypes.PLGN))
             return (SeriesMarkers.TRAPEZOID);
 
-        return SeriesMarkers.CIRCLE;
+        return SeriesMarkers.RECTANGLE;
     }
 
     public void plotPhaseLengthCurves() {

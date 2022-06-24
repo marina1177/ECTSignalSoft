@@ -27,6 +27,8 @@ public class CollectHodographObjects {
         fileNameParser = new FileNameParser(fileName);
         DataFormatter formatter = new DataFormatter();
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+        DataFormatter dataFormatter = new DataFormatter(new java.util.Locale("en", "US"));
+        //dataFormatter.setDefaultNumberFormat();
         String cellValue = "";
 
         List<NDTDataObject> ndtDataObjects = new ArrayList<>();
@@ -46,13 +48,17 @@ public class CollectHodographObjects {
                 if (row.getRowNum() == 0) {
                     Map<Object, Integer> title = saveNDTDataTiteles(cellValue, cellCount);
                     titleIndex.putAll(title);
-                } else {
-                    if (isNumeric(cellValue)) {
-                        NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
-                        Number number = format.parse(cellValue);
-                        cellsValues.add(number.doubleValue());
+                } else if (cell.getCellType() == CellType.FORMULA) {
+                        switch (cell.getCachedFormulaResultType()) {
+                            case NUMERIC: { // from apache poi 5.2.0 on
+                                cellsValues.add(Double.valueOf(cell.getNumericCellValue()));
+                                break;
+                            }
+                        }
+                    } else if (cell.getCellType() == CellType.NUMERIC) {
+                        String value = dataFormatter.formatCellValue(cell); // from apache poi 5.2.0 on
+                        cellsValues.add(Double.parseDouble(value));
                     }
-                }
                 cellCount++;
             }
             if (!cellsValues.isEmpty()) {
@@ -86,12 +92,17 @@ public class CollectHodographObjects {
         if (strNum == null) {
             return false;
         }
-        try {
-            double d = Double.parseDouble(strNum);
-        } catch (NumberFormatException nfe) {
-            return false;
-        }
-        return true;
+        boolean numeric = true;
+
+        numeric = strNum.matches("-?\\d+(\\.\\d+)?");
+        return  numeric;
+
+//        try {
+//            double d = Double.parseDouble(strNum);
+//        } catch (NumberFormatException nfe) {
+//            return false;
+//        }
+//        return true;
     }
 
     public static boolean isNumeric2(String str) {
@@ -194,7 +205,7 @@ public class CollectHodographObjects {
             titleIndex.put("deep[%]", cellCount);
         else if (cellValue.contains("Amp"))
             titleIndex.put("Amplitude[V]", cellCount);
-        else if (cellValue.contains("rotate"))
+        else if (cellValue.contains("Rotate"))
             titleIndex.put("rotated phase [deg]", cellCount);
         else if (cellValue.contains("Phase"))
             titleIndex.put("Phase [deg]", cellCount);

@@ -206,7 +206,6 @@ public class FileToCollections {
 
         //Map<Integer, List<NDTDataObject>> freqHOMap = new HashMap<>();
 
-
         Map<Integer, List<NDTDataObject>> freqToNDTList = getFreqToExperimentObjects(ndtDataObjectList);
         Map<Integer, Map<Integer, List<NDTDataObject>>> freqToDeepToNDT = getFreqToDeepAndExperimentObjects(freqToNDTList);
 
@@ -268,7 +267,7 @@ public class FileToCollections {
             }
             tmpList.add(entity);
 
-            System.out.println("entityIndex: " + ndtDataObjectList.indexOf(entity) + " vs " + (ndtDataObjectList.size() - 1));
+            //System.out.println("entityIndex: " + ndtDataObjectList.indexOf(entity) + " vs " + (ndtDataObjectList.size() - 1));
             if (ndtDataObjectList.indexOf(entity) == ndtDataObjectList.size() - 1) {
                 freqToNDTMap.put(tmpFreq, tmpList);
             }

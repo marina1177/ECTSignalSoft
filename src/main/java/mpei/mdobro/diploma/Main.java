@@ -62,19 +62,19 @@ public class Main {
                 hodographsDifferentTypes, AlgorithmType.MAX_AMPLITUDE);
 
         painter.setFreqToDeepAndLengthAngleModelList(freqToDeepAndLengthAngleModelList);
-        //painter.plotModelDataAmongLimits();
+        painter.plotModelDataAmongLimits();
 
         //======================================= EXPERIMENT ==============================
         File experimentDir = new File(EXPERIMENT_DIR);
 
-        Map<Integer, Map<Integer, List<NDTDataObject>>> experimentData = saveExperimentData(experimentDir);
+      //  Map<Integer, Map<Integer, List<NDTDataObject>>> experimentData = saveExperimentData(experimentDir);
 
 
         //======================================= POD ==============================
 
 //        ProcessPODResearch podResearch = new ProcessPODResearch(freqToDeepAndLengthAngleList,
 //                freqToDeepAndLengthAngleModelList, experimentData);
-//
+//        podResearch.createFilesForMH1823();
 //        podResearch.runSimplePODProcess();
     }
 

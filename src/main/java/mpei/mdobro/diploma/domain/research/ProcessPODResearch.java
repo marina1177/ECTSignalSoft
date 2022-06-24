@@ -7,10 +7,15 @@ import mpei.mdobro.diploma.domain.parse.HodographObject;
 import mpei.mdobro.diploma.domain.parse.NDTDataObject;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.commons.math3.util.Pair;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.PI;
@@ -24,7 +29,7 @@ public class ProcessPODResearch {
     private final Map<Integer, Map<Integer, List<HodographObject>>>
             freqToDeepAndLengthAngleLimitList;
     private final Map<Integer, Map<Integer, List<HodographObject>>> freqToDeepAndLengthAngleModelList;
-    private final Map<Integer, List<NDTDataObject>> experimentData;
+    private final Map<Integer, Map<Integer, List<NDTDataObject>>> experimentData;
 
     private Map<Integer, Pair<Double, Double>> rangePerFreq = new HashMap();
 
@@ -55,65 +60,187 @@ public class ProcessPODResearch {
         return freqToRegression;
     }
 
-    public void runSimplePODProcess() {
-        determineRangeByFreq();
+    public void createFilesForMH1823() throws IOException {
+        //1. Create a blank workbook.
+        XSSFWorkbook workbook = new XSSFWorkbook();
 
-        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> freqEntry : freqToDeepAndLengthAngleModelList.entrySet()) {
+        //2. Create a sheet and name it.
+        XSSFSheet spreadsheet = workbook.createSheet("modelAndExperiment");
 
-            applyDetectToExperiment(freqEntry.getKey());
+        // 3. Create a row
+        Row row;//= sheet.createRow(rownum++);
 
-            Map<Integer, Double> deepToPOD = new HashMap<>();
-            for (Map.Entry<Integer, List<HodographObject>> deepEntry : freqEntry.getValue().entrySet()) {
+        TreeMap<Integer, Map<Integer, Object[]>> mapForSeveralFrequencies = new TreeMap<Integer, Map<Integer, Object[]>>();
 
-                int N = 0;
-                int Nd = 0;
+        for (Integer freq : freqToDeepAndLengthAngleLimitList.keySet()) {
+            Map<Integer, Object[]> data
+                    = new TreeMap<Integer, Object[]>();
+            data.put(0,
+                    new Object[]{"ID", "deep", "phaseTest", "amplitudeTest"});
 
-                for (HodographObject deepHO : deepEntry.getValue()) {
+            mapForSeveralFrequencies.put(freq, data);
+        }
 
-                    boolean isDetected = modelIsDetected(deepHO);
-                    if (isDetected) {
-                        Nd = Nd + 1;
-                    }
-                    N = N + 1;
+        Integer IDcount = 1;
+        IDcount = fillDataModelObjects(freqToDeepAndLengthAngleLimitList,
+                mapForSeveralFrequencies, IDcount);
+        IDcount = fillDataModelObjects(freqToDeepAndLengthAngleModelList,
+                mapForSeveralFrequencies, IDcount);
+        fillDataExperimentsObjects(experimentData, mapForSeveralFrequencies, IDcount);
 
-                    if (deepEntry.getValue().indexOf(deepHO) == deepEntry.getValue().size() - 1) {
-                        Double POD = 0.0;
-                        if(deepEntry.getKey() == 100){
-                            POD = calculatePOD(deepEntry, experimentData.get(freqEntry.getKey()));
-                        }
-                        else {
-                            POD = calculatePOD(deepEntry, null);
-                        }
-                        deepToPOD.put(deepEntry.getKey(), POD);
-                   }
+        String pthString = "D:\\Desktop\\masterDiploma\\gitECTSoft\\src\\main\\resources\\mh1823\\a.hat vs a";
+
+        for (Map.Entry<Integer, Map<Integer, Object[]>> entry : mapForSeveralFrequencies.entrySet()) {
+
+            Map<Integer, Object[]> data = entry.getValue();
+
+            Set<Integer> keyid = data.keySet();
+
+            int rowid = 0;
+
+            // writing the data into the sheets...
+            for (Integer key : keyid) {
+                row = spreadsheet.createRow(rowid++);
+                Object[] objectArr = data.get(key);
+
+                int cellid = 0;
+
+                for (Object obj : objectArr) {
+                    Cell cell = row.createCell(cellid++);
+                    cell.setCellValue(obj.toString());
                 }
             }
 
-            freqToDeepToPOD.put(freqEntry.getKey(), deepToPOD);
+
+            FileOutputStream out = new FileOutputStream(new File(
+                    pthString +
+                            "_freq_" +
+                            entry.getKey()
+                            + ".xlsx"));
+
+            workbook.write(out);
+            out.close();
         }
-        PODPrinter podPrinter = new PODPrinter();
-        podPrinter.print(freqToDeepToPOD);
     }
 
-    private void applyDetectToExperiment(Integer freq){
-        List<NDTDataObject> ndtFreqList = experimentData.get(freq);
-        for(NDTDataObject experimentObj : ndtFreqList) {
-            if (experimentObj.getRotatedPhase() >= rangePerFreq.get(experimentObj.getFreq()).getKey()
-                    && experimentObj.getRotatedPhase() <= rangePerFreq.get(experimentObj.getFreq()).getValue()) {
-                experimentObj.setDetected(true);
+    private void fillDataExperimentsObjects(Map<Integer, Map<Integer, List<NDTDataObject>>> modelMap,
+                                            Map<Integer, Map<Integer, Object[]>> mapForSeveralFrequencies,
+                                            Integer IDCount) {
+
+        Integer tmpCount = 0;
+        for (Map.Entry<Integer, Map<Integer, List<NDTDataObject>>> freqEntry
+                : modelMap.entrySet()) {
+            tmpCount = IDCount;
+            Integer currentFreq = freqEntry.getKey();
+            Map<Integer, Object[]> data = mapForSeveralFrequencies
+                    .get(currentFreq);
+
+            for (Map.Entry<Integer, List<NDTDataObject>> deepEntry : freqEntry.getValue().entrySet()) {
+                Integer currentDeep = deepEntry.getKey();
+
+                for (NDTDataObject o : deepEntry.getValue()) {
+                    data.put(tmpCount, new Object[]{(tmpCount),
+                            currentDeep,
+                            o.getRotatedPhase().intValue(),
+                            o.getAmplitude()});
+                    tmpCount = tmpCount + 1;
+                }
             }
-            experimentObj.setDetected(false);
-            System.out.println(">>" + experimentObj.toString());
+            mapForSeveralFrequencies.get(currentFreq).putAll(data);
         }
+
     }
+
+    private Integer fillDataModelObjects(Map<Integer, Map<Integer, List<HodographObject>>> modelMap,
+                                         Map<Integer, Map<Integer, Object[]>> mapForSeveralFrequencies,
+                                         Integer IDCount) {
+
+        Integer tmpCount = 0;
+        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> freqEntry
+                : modelMap.entrySet()) {
+            tmpCount = IDCount;
+            Integer currentFreq = freqEntry.getKey();
+            Map<Integer, Object[]> data = mapForSeveralFrequencies
+                    .get(currentFreq);
+
+            for (Map.Entry<Integer, List<HodographObject>> deepEntry : freqEntry.getValue().entrySet()) {
+                Integer currentDeep = deepEntry.getKey();
+
+
+                for (HodographObject ho : deepEntry.getValue()) {
+                    Double phase = ho.getComplexNumber().getArgument() * 180 / PI;
+                    data.put(tmpCount,
+                            new Object[]{(tmpCount),
+                                    currentDeep,
+                                    phase.intValue(),
+                            ho.getComplexNumber().abs()});
+                    tmpCount = tmpCount + 1;
+                }
+            }
+            mapForSeveralFrequencies.get(currentFreq).putAll(data);
+        }
+        return tmpCount;
+    }
+
+//    public void runSimplePODProcess() {
+//        determineRangeByFreq();
+//
+//        for (Map.Entry<Integer, Map<Integer, List<HodographObject>>> freqEntry : freqToDeepAndLengthAngleModelList.entrySet()) {
+//
+//            applyDetectToExperiment(freqEntry.getKey());
+//
+//            Map<Integer, Double> deepToPOD = new HashMap<>();
+//            for (Map.Entry<Integer, List<HodographObject>> deepEntry : freqEntry.getValue().entrySet()) {
+//
+//                int N = 0;
+//                int Nd = 0;
+//
+//                for (HodographObject deepHO : deepEntry.getValue()) {
+//
+//                    boolean isDetected = modelIsDetected(deepHO);
+//                    if (isDetected) {
+//                        Nd = Nd + 1;
+//                    }
+//                    N = N + 1;
+//
+//                    if (deepEntry.getValue().indexOf(deepHO) == deepEntry.getValue().size() - 1) {
+//                        Double POD = 0.0;
+//                        if(deepEntry.getKey() == 100) {
+//                            POD = calculatePOD(deepEntry, experimentData.get(freqEntry.getKey()));
+//                        }
+//                        else {
+//                            POD = calculatePOD(deepEntry, null);
+//                        }
+//                        deepToPOD.put(deepEntry.getKey(), POD);
+//                   }
+//                }
+//            }
+//
+//            freqToDeepToPOD.put(freqEntry.getKey(), deepToPOD);
+//        }
+//        PODPrinter podPrinter = new PODPrinter();
+//        podPrinter.print(freqToDeepToPOD);
+//    }
+//
+//    private void applyDetectToExperiment(Integer freq){
+//        List<NDTDataObject> ndtFreqList = experimentData.get(freq);
+//        for(NDTDataObject experimentObj : ndtFreqList) {
+//            if (experimentObj.getRotatedPhase() >= rangePerFreq.get(experimentObj.getFreq()).getKey()
+//                    && experimentObj.getRotatedPhase() <= rangePerFreq.get(experimentObj.getFreq()).getValue()) {
+//                experimentObj.setDetected(true);
+//            }
+//            experimentObj.setDetected(false);
+//            System.out.println(">>" + experimentObj.toString());
+//        }
+//    }
 
     private Double calculatePOD(Map.Entry<Integer, List<HodographObject>> modelDeepEntry, List<NDTDataObject> experimentTrougthData) {
 
-        int N_exp=0;
+        int N_exp = 0;
         Long Nd_exp = 0L;
-        if(experimentTrougthData != null){
+        if (experimentTrougthData != null) {
             N_exp = experimentTrougthData.size();
-            Nd_exp =experimentTrougthData
+            Nd_exp = experimentTrougthData
                     .stream()
                     .filter(e -> e.isDetected())
                     .count();
@@ -136,7 +263,7 @@ public class ProcessPODResearch {
         Double phase = hodographObject.getComplexNumber().getArgument() * 180 / PI;
 
         if (phase >= rangePerFreq.get(hodographObject.getFreq()).getKey()
-                && phase <= rangePerFreq.get(hodographObject.getFreq()).getValue()){
+                && phase <= rangePerFreq.get(hodographObject.getFreq()).getValue()) {
             hodographObject.setDetected(true);
             return true;
         }
